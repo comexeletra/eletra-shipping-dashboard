@@ -1,0 +1,2227 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>COMEX · FUP Dashboard | Eletra Energy Solutions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ── RESET & TOKENS ─────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#eef2f7;--bg2:#e4eaf3;--card:#fff;--border:#d5ddef;--border2:#bbc8e0;
+  --blue:#1a3480;--accent:#2563eb;--accent2:#3b82f6;
+  --green:#059669;--amber:#d97706;--orange:#ea6c1a;--red:#dc2626;
+  --purple:#7c3aed;--cyan:#0891b2;--gray:#5a6a84;--indigo:#4f46e5;
+  --text:#1a2742;--text2:#3d537a;--muted:#7a90b8;
+  --radius:10px;--shadow:0 2px 10px rgba(26,39,66,.08);--shadow2:0 4px 20px rgba(26,39,66,.13);
+}
+body{font-family:'IBM Plex Sans','Noto Sans SC',sans-serif;font-size:13px;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+.header{background:linear-gradient(135deg,#0f2057,#1a3480 50%,#0f2057);color:#fff;padding:0 24px;display:flex;align-items:center;gap:16px;height:68px;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(15,32,87,.25);flex-wrap:nowrap}
+.logo{background:var(--accent);font-weight:700;font-size:13px;letter-spacing:.06em;padding:6px 11px;border-radius:6px;text-transform:uppercase;flex-shrink:0}
+.header-info{flex:1;min-width:0}
+.header-info h1{font-size:15px;font-weight:600;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-info .sub{font-size:10px;color:rgba(255,255,255,.5);font-family:'Noto Sans SC',sans-serif;letter-spacing:.06em}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.last-up{font-size:10px;color:rgba(255,255,255,.45);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.conn-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-family:'IBM Plex Mono',monospace;padding:4px 9px;border-radius:20px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);cursor:default;white-space:nowrap}
+.conn-dot{width:6px;height:6px;border-radius:50%;background:#6b7280}
+.conn-pill.ok .conn-dot{background:#10b981;box-shadow:0 0 6px #10b981}
+.conn-pill.warn .conn-dot{background:#f59e0b;box-shadow:0 0 6px #f59e0b}
+.lang-wrap{display:flex;gap:4px}
+.lang-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;padding:4px 9px;border-radius:5px;cursor:pointer;font-size:10px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;transition:.15s}
+.lang-btn.act,.lang-btn:hover{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.55)}
+.upload-hdr-btn{background:var(--green);border:none;color:#fff;padding:6px 13px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;display:flex;align-items:center;gap:5px;transition:.15s;white-space:nowrap}
+.upload-hdr-btn:hover{background:#047857}
+
+/* ── UPLOAD PANEL ───────────────────────────────────────────── */
+.upanel{background:var(--card);border-radius:0 0 var(--radius) var(--radius);box-shadow:var(--shadow2);border:2px solid var(--green);border-top:none;overflow:hidden;max-height:0;transition:max-height .35s ease,opacity .3s;opacity:0}
+.upanel.open{max-height:420px;opacity:1}
+.upanel-inner{padding:20px 24px 22px}
+.utabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:18px}
+.utab{padding:8px 16px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:none;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;transition:.2s;font-family:'IBM Plex Sans',sans-serif}
+.utab.act{color:var(--green);border-bottom-color:var(--green)}
+/* ── GOOGLE SHEETS TAB ──────────────────────────────────────── */
+.gs-steps{background:var(--bg2);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:11px;color:var(--text2);line-height:1.8}
+.gs-steps ol{margin:6px 0 0 16px;padding:0}
+.gs-steps li{margin-bottom:2px}
+.gs-steps code{background:var(--border2);border-radius:3px;padding:1px 5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--blue)}
+.gs-row{display:flex;gap:8px;align-items:center}
+.gs-interval{font-size:11px;padding:7px 8px;border:1.5px solid var(--border2);border-radius:7px;background:var(--card);color:var(--text1);font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.gs-refresh-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;background:#d1fae5;color:#065f46}
+.gs-refresh-badge.off{background:var(--bg2);color:var(--muted)}
+.gs-countdown{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:4px}
+.utab-content{display:none}
+.utab-content.act{display:block}
+.drop-zone{border:2px dashed var(--border2);border-radius:9px;padding:28px 20px;text-align:center;cursor:pointer;background:#f9fafb;transition:.2s}
+.drop-zone:hover,.drop-zone.over{border-color:var(--green);background:#f0fdf4}
+.drop-zone .dz-ico{font-size:2.2rem;margin-bottom:8px}
+.drop-zone p{font-size:12px;color:var(--muted);margin-bottom:6px}
+.drop-zone strong{color:var(--text2)}
+.dz-btn{display:inline-block;background:var(--green);color:#fff;padding:7px 18px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;margin-top:8px}
+.drop-zone input{display:none}
+.sp-form{display:flex;flex-direction:column;gap:10px}
+.sp-form label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.sp-form input{padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;width:100%;font-family:'IBM Plex Sans',sans-serif}
+.sp-form input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(5,150,105,.1)}
+.sp-btn{background:var(--green);color:#fff;border:none;padding:9px 20px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;align-self:flex-start;display:flex;align-items:center;gap:5px}
+.sp-btn:hover{background:#047857}
+.sp-btn:disabled{background:#94a3b8;cursor:not-allowed}
+.sp-note{background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:10px 13px;font-size:11px;color:#92400e}
+.ulog{background:#f8fafc;border-radius:7px;padding:10px 14px;font-size:11px;color:#374151;margin-top:12px;border:1px solid var(--border);max-height:110px;overflow-y:auto;font-family:'IBM Plex Mono',monospace;line-height:1.7;display:none}
+.ulog.show{display:block}
+.log-ok{color:var(--green);font-weight:700}.log-err{color:var(--red);font-weight:700}.log-info{color:var(--accent)}
+
+/* ── MAIN ───────────────────────────────────────────────────── */
+.main{max-width:1440px;margin:0 auto;padding:18px 20px 30px}
+.last-update-bar{font-size:11px;color:var(--muted);text-align:right;margin-bottom:10px;font-family:'IBM Plex Mono',monospace}
+
+/* ── KPIs ───────────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);border-top:3px solid var(--border)}
+.kpi.c-blue{border-top-color:var(--accent)}.kpi.c-amber{border-top-color:var(--amber)}.kpi.c-gray{border-top-color:var(--gray)}.kpi.c-green{border-top-color:var(--green)}.kpi.c-red{border-top-color:var(--red)}.kpi.c-purple{border-top-color:var(--purple)}.kpi.c-cyan{border-top-color:var(--cyan)}
+.kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:5px}
+.kpi-val{font-size:1.85rem;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1}
+.kpi.c-blue .kpi-val{color:var(--accent)}.kpi.c-amber .kpi-val{color:var(--amber)}.kpi.c-gray .kpi-val{color:var(--gray)}.kpi.c-green .kpi-val{color:var(--green)}.kpi.c-red .kpi-val{color:var(--red)}.kpi.c-purple .kpi-val{color:var(--purple)}.kpi.c-cyan .kpi-val{color:var(--cyan)}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px}
+/* ── KPI CLICKABLE ──────────────────────────────────────────── */
+.kpi{cursor:pointer;transition:transform .12s,box-shadow .12s;user-select:none}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
+.kpi.kpi-act{transform:translateY(-2px)}
+.kpi.kpi-act.c-blue  {box-shadow:0 0 0 2.5px var(--accent),var(--shadow2)}
+.kpi.kpi-act.c-amber {box-shadow:0 0 0 2.5px var(--amber),var(--shadow2)}
+.kpi.kpi-act.c-gray  {box-shadow:0 0 0 2.5px var(--gray),var(--shadow2)}
+.kpi.kpi-act.c-purple{box-shadow:0 0 0 2.5px var(--purple),var(--shadow2)}
+.kpi.kpi-act.c-green {box-shadow:0 0 0 2.5px var(--green),var(--shadow2)}
+.kpi.kpi-act.c-red   {box-shadow:0 0 0 2.5px var(--red),var(--shadow2)}
+.kpi.kpi-act.c-cyan  {box-shadow:0 0 0 2.5px var(--cyan),var(--shadow2)}
+/* ── PRIORITY BAR CLICKABLE ─────────────────────────────────── */
+.pbar-row{cursor:pointer;border-radius:6px;padding:3px 6px;margin:-3px -6px;transition:background .12s;user-select:none}
+.pbar-row:hover{background:var(--bg2)}
+.pbar-row.pbar-act{background:var(--bg2);outline:2px solid var(--accent2);outline-offset:1px}
+
+/* ── CHARTS ROW ─────────────────────────────────────────────── */
+.charts-row{display:grid;grid-template-columns:300px 1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:900px){.charts-row{grid-template-columns:1fr}}
+.chart-card{background:var(--card);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow)}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.chart-hdr h3{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+.chart-pill{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;color:var(--text2);font-family:'IBM Plex Mono',monospace}
+.chart-canvas-wrap{position:relative;height:200px}
+/* ETA card altura mínima */
+.eta-card-body{min-height:230px}
+
+/* Priority bar chart */
+.prio-bars{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+.pbar-row{display:flex;align-items:center;gap:8px}
+.pbar-lbl{width:90px;font-size:11px;font-weight:600;color:var(--text2);text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbar-track{flex:1;background:var(--bg2);border-radius:4px;height:16px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:4px;transition:width .5s}
+.pbar-val{width:20px;font-size:11px;font-weight:700;color:var(--text);text-align:right;font-family:'IBM Plex Mono',monospace}
+
+/* ETA Gantt chart */
+.eta-list{display:flex;flex-direction:column;gap:0;padding-top:2px}
+.gantt-date-header{display:flex;padding-left:98px;margin-bottom:5px;padding-right:68px}
+.gantt-date-lbl{flex:1;font-size:9px;color:var(--muted);text-align:center;font-family:'IBM Plex Mono',monospace}
+.eta-item{display:flex;align-items:center;gap:6px;height:28px}
+.eta-proc{width:92px;font-size:10px;font-weight:700;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0}
+.eta-bar-track{flex:1;background:var(--bg2);border-radius:4px;height:14px;position:relative;overflow:visible}
+.eta-bar-fill{height:100%;border-radius:4px;position:absolute;left:0;top:0}
+.gantt-dl-dot{width:9px;height:9px;border-radius:50%;position:absolute;top:50%;transform:translate(-50%,-50%);z-index:3;border:1.5px solid #fff}
+.gantt-today-line{position:absolute;top:-5px;bottom:-5px;width:2px;z-index:4;border-radius:1px}
+.eta-chip{width:62px;flex-shrink:0;text-align:right}
+.eta-chip span{display:inline-flex;align-items:center;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:700;font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.chip-ok{background:#d1fae5;color:#065f46}
+.chip-late{background:#fee2e2;color:#991b1b}
+.chip-warn{background:#fef3c7;color:#92400e}
+.chip-none{background:var(--bg2);color:var(--muted)}
+.eta-empty{font-size:11px;color:var(--muted);text-align:center;padding:18px;font-style:italic}
+
+/* ── OBS TOOLTIP ────────────────────────────────────────────── */
+.eta-item{position:relative}
+.obs-tip{
+  display:none;position:absolute;bottom:calc(100% + 6px);left:0;z-index:99;
+  background:#1a2742;color:#f0f4ff;font-size:10px;line-height:1.5;
+  padding:7px 11px;border-radius:7px;white-space:pre-wrap;word-break:break-word;
+  max-width:280px;min-width:120px;box-shadow:0 4px 16px rgba(26,39,66,.35);
+  pointer-events:none;
+}
+.obs-tip::after{
+  content:'';position:absolute;top:100%;left:14px;
+  border:5px solid transparent;border-top-color:#1a2742;
+}
+.eta-item:hover .obs-tip{display:block}
+.obs-icon{
+  font-size:9px;color:var(--muted);margin-left:4px;cursor:default;
+  flex-shrink:0;opacity:.7;
+}
+
+/* ── CONTROLS ───────────────────────────────────────────────── */
+.controls{background:var(--card);border-radius:var(--radius);padding:11px 14px;box-shadow:var(--shadow);margin-bottom:12px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.ctrl-grp{display:flex;align-items:center;gap:5px}
+.ctrl-grp label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
+.ctrl-grp input,.ctrl-grp select{padding:6px 9px;border:1.5px solid var(--border);border-radius:6px;font-size:11px;background:#f9fafb;color:var(--text);transition:.15s;font-family:'IBM Plex Sans',sans-serif}
+.ctrl-grp input:focus,.ctrl-grp select:focus{outline:none;border-color:var(--accent);background:#fff}
+.clr-btn{padding:6px 11px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg);color:var(--muted);font-size:11px;cursor:pointer;transition:.15s;font-family:'IBM Plex Sans',sans-serif}
+.clr-btn:hover{background:var(--bg2)}
+.chip{background:#dbeafe;color:#1d4ed8;padding:2px 9px 2px 6px;border-radius:20px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;gap:3px;cursor:pointer;border:none;font-family:'IBM Plex Sans',sans-serif}
+.chip:hover{background:#bfdbfe}
+.results-ct{margin-left:auto;font-size:11px;color:var(--muted);font-weight:600;font-family:'IBM Plex Mono',monospace}
+
+/* ── GROUP FILTER TOGGLE ────────────────────────────────────── */
+.grp-toggle{display:flex;gap:0;border:1.5px solid var(--border);border-radius:7px;overflow:hidden;flex-shrink:0}
+.grp-btn{padding:5px 12px;border:none;background:#f9fafb;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;transition:.15s;white-space:nowrap;border-right:1px solid var(--border)}
+.grp-btn:last-child{border-right:none}
+.grp-btn:hover{background:var(--bg2);color:var(--text)}
+.grp-btn.act{background:var(--blue);color:#fff}
+.grp-btn[data-g="ELETRA"].act{background:#2563eb}
+.grp-btn[data-g="LIVOLTEK"].act{background:#d97706}
+
+/* ── TABLE ──────────────────────────────────────────────────── */
+.tbl-wrap{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:auto;margin-bottom:16px;max-height:480px}
+table{width:100%;border-collapse:collapse;min-width:860px}
+thead th{background:#f0f4fb;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:9px 11px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
+thead th.sort-asc::after{content:' ▲';font-size:8px}
+thead th.sort-desc::after{content:' ▼';font-size:8px}
+thead th{cursor:pointer;user-select:none}
+thead th:hover{background:#e4eaf3}
+tbody tr{border-bottom:1px solid #f0f4fb;transition:.1s}
+tbody tr:hover{background:#f5f8ff}
+tbody tr:nth-child(even){background:#f8fafd}
+tbody tr:nth-child(even):hover{background:#f0f4fb}
+td{padding:8px 11px;font-size:11px;vertical-align:middle}
+.td-proc{font-weight:700;color:var(--blue);font-size:12px;font-family:'IBM Plex Mono',monospace}
+.td-prio{text-align:center}
+.prio-dot{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:10px;font-weight:800;color:#fff;font-family:'IBM Plex Mono',monospace}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.b-waiting{background:#f1f5f9;color:#475569}.b-transit{background:#fef3c7;color:#92400e}.b-customs{background:#fce7f3;color:#9d174d}
+.b-delivered{background:#d1fae5;color:#065f46}.b-pending{background:#dbeafe;color:#1e40af}
+/* ── Multi-select filter chips ─────────────────────────────── */
+.ms-wrap{position:relative;display:inline-block;}
+.ms-btn{padding:5px 10px;border:1.5px solid var(--border);border-radius:6px;background:#fff;
+  cursor:pointer;font-size:11px;color:var(--text);display:flex;align-items:center;gap:5px;
+  min-width:100px;justify-content:space-between;white-space:nowrap;}
+.ms-btn:hover{border-color:var(--accent)}
+.ms-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:#fff;
+  border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);
+  z-index:200;min-width:160px;padding:6px 0;}
+.ms-dropdown label{display:flex;align-items:center;gap:8px;padding:6px 12px;
+  cursor:pointer;font-size:11px;color:var(--text);transition:.1s;}
+.ms-dropdown label:hover{background:var(--bg)}
+.ms-dropdown input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;}
+.ms-sep{border:none;border-top:1px solid var(--border);margin:4px 0;}
+.c-violet{border-color:#7c3aed;color:#7c3aed}.c-violet .kpi-val{color:#7c3aed}
+.b-early{background:#ffedd5;color:#9a3412}.b-unk{background:#f1f5f9;color:#64748b}
+.step-wrap{display:flex;align-items:center;gap:5px}
+.step-track{flex:1;height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;min-width:45px}
+.step-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent2),var(--blue))}
+.step-num{font-size:10px;color:var(--muted);white-space:nowrap;flex-shrink:0;font-family:'IBM Plex Mono',monospace}
+.next-tag{font-size:9px;color:var(--amber);font-weight:700;background:#fef3c7;padding:1px 5px;border-radius:8px;margin-left:3px;white-space:nowrap}
+.late-tag{color:var(--red);font-size:10px;font-weight:700;margin-left:3px}
+.mode-ico{font-size:13px;margin-right:2px}
+tfoot td{font-size:11px;color:var(--muted);padding:8px 11px;border-top:2px solid var(--border);background:#f8fafc}
+.empty{text-align:center;padding:40px;color:var(--muted)}
+
+/* ── STATUS LEGEND BAR ──────────────────────────────────────── */
+.sl-bar{background:var(--card);border-radius:var(--radius);padding:9px 14px;box-shadow:var(--shadow);margin-bottom:12px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:10px}
+.sl-title{font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-size:9px;margin-right:4px}
+.sl-item{display:flex;align-items:center;gap:4px}
+.sl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sl-pipe{color:var(--border2);margin:0 2px}
+
+/* ── TABLE OBS TOOLTIP ──────────────────────────────────────── */
+.td-obs{position:relative;text-align:center;cursor:default;vertical-align:middle}
+.obs-td-tip{
+  display:none;position:absolute;bottom:calc(100% + 7px);right:0;z-index:120;
+  background:#1a2742;color:#f0f4ff;font-size:10px;line-height:1.55;
+  padding:8px 12px;border-radius:7px;white-space:pre-wrap;word-break:break-word;
+  max-width:300px;min-width:130px;box-shadow:0 4px 18px rgba(26,39,66,.38);
+  pointer-events:none;
+}
+.obs-td-tip::after{
+  content:'';position:absolute;top:100%;right:12px;
+  border:5px solid transparent;border-top-color:#1a2742;
+}
+.td-obs:hover .obs-td-tip{display:block}
+.obs-none{color:var(--border2);font-size:12px}
+
+/* ── PLACEHOLDER STATE ──────────────────────────────────────── */
+.placeholder-state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;box-shadow:var(--shadow);margin:24px 0}
+.placeholder-state .ph-ico{font-size:3rem;margin-bottom:14px;opacity:.5}
+.placeholder-state h2{font-size:16px;color:var(--text2);margin-bottom:8px}
+.placeholder-state p{font-size:12px;color:var(--muted);max-width:360px;margin:0 auto 18px}
+.ph-upload-btn{background:var(--green);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;display:inline-flex;align-items:center;gap:6px}
+.ph-upload-btn:hover{background:#047857}
+
+@media(max-width:600px){.kpi-row{grid-template-columns:repeat(2,1fr)}.header-info h1{font-size:12px}.last-up,.conn-pill{display:none}}
+
+/* ── Multi-select ──────────────────────────────────────────── */
+.ms-wrap{position:relative;display:inline-block;}
+.ms-btn{padding:5px 10px;border:1.5px solid var(--border);border-radius:6px;background:#fff;
+  cursor:pointer;font-size:11px;color:var(--text);display:flex;align-items:center;gap:5px;
+  min-width:110px;justify-content:space-between;white-space:nowrap;font-family:'IBM Plex Sans',sans-serif;}
+.ms-btn:hover{border-color:var(--accent)}
+.ms-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:#fff;
+  border:1.5px solid var(--border);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);
+  z-index:300;min-width:150px;padding:6px 0;}
+.ms-dropdown label{display:flex;align-items:center;gap:8px;padding:6px 14px;
+  cursor:pointer;font-size:11px;color:var(--text);transition:.1s;user-select:none;}
+.ms-dropdown label:hover{background:var(--bg)}
+.ms-dropdown input[type=checkbox]{accent-color:var(--accent);width:13px;height:13px;cursor:pointer;}
+
+/* ── DETAIL PANEL ──────────────────────────────────────────── */
+.dp-overlay{position:fixed;inset:0;background:rgba(15,32,87,.38);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s}
+.dp-overlay.open{opacity:1;pointer-events:all}
+.dp-panel{position:fixed;top:0;right:0;bottom:0;width:480px;max-width:100vw;
+  background:#fff;z-index:401;display:flex;flex-direction:column;
+  transform:translateX(102%);transition:transform .30s cubic-bezier(.22,.68,0,1.15);
+  box-shadow:-8px 0 40px rgba(15,32,87,.22);font-family:'IBM Plex Sans',sans-serif;}
+.dp-panel.open{transform:translateX(0)}
+.dp-hdr{background:linear-gradient(135deg,#0f2057,#1a3480);color:#fff;padding:16px 18px 14px;flex-shrink:0}
+.dp-hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dp-proc-id{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700}
+.dp-close{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;
+  width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:17px;
+  display:flex;align-items:center;justify-content:center;transition:.15s;}
+.dp-close:hover{background:rgba(255,255,255,.3)}
+.dp-badges{display:flex;flex-wrap:wrap;gap:5px}
+.dp-badge{background:rgba(255,255,255,.18);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600;white-space:nowrap}
+.dp-body{flex:1;overflow-y:auto;padding-bottom:20px}
+.dp-section{padding:12px 18px 6px}
+.dp-sec-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;
+  color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dp-sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.pre-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f7fb}
+.pre-row:last-child{border-bottom:none}
+.pre-ico{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+.pre-ico.ok{background:#d1fae5;color:#065f46}.pre-ico.no{background:#f1f5f9;color:#94a3b8}
+.pre-nm{flex:1;font-size:10px;color:var(--text2)}.pre-dt{font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted);white-space:nowrap}
+.tl-wrap{padding-left:30px;position:relative}
+.tl-wrap::before{content:'';position:absolute;left:12px;top:10px;bottom:10px;width:2px;
+  background:linear-gradient(to bottom,var(--accent2),var(--border));border-radius:1px}
+.tl-row{display:flex;align-items:flex-start;gap:10px;padding:5px 0;position:relative;min-height:42px}
+.tl-dot{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;font-family:'IBM Plex Mono',monospace;
+  position:absolute;left:-28px;top:4px;border:2px solid #fff;transition:.2s}
+.tl-dot.done{background:#059669;color:#fff;box-shadow:0 0 0 2px #d1fae5}
+.tl-dot.cur{background:var(--accent);color:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.25);animation:tlpulse 1.8s ease-in-out infinite}
+.tl-dot.skip{background:#e5e7eb;color:#9ca3af;border-color:#e5e7eb}
+.tl-dot.fut{background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0}
+@keyframes tlpulse{0%,100%{box-shadow:0 0 0 3px rgba(37,99,235,.25)}50%{box-shadow:0 0 0 7px rgba(37,99,235,.08)}}
+.tl-content{flex:1;padding-bottom:5px}
+.tl-step-lbl{font-size:8px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:1px}
+.tl-step-nm{font-size:11px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:3px}
+.tl-step-nm.cur-nm{color:var(--accent)}.tl-step-nm.skip-nm{color:#9ca3af}
+.tl-dates{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tl-real{font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:700}
+.tl-real.done-cl{color:#059669}.tl-real.today-cl{color:var(--accent);background:#eff6ff;border-radius:4px;padding:1px 5px;font-weight:800}.tl-real.fut-cl{color:#94a3b8}
+.tl-dl{font-size:9px;font-family:'IBM Plex Mono',monospace;color:var(--muted)}
+.tl-delay{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;border-radius:3px;font-weight:700}
+.tl-delay.late{background:#fee2e2;color:#b91c1c}.tl-delay.ok{background:#d1fae5;color:#065f46}
+.tl-row.skip-row{opacity:.5}
+.dp-footer{padding:12px 18px;border-top:2px solid var(--border);background:var(--bg);
+  flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.dp-kpi{background:#fff;border-radius:7px;padding:8px 10px;border:1px solid var(--border)}
+.dp-kpi-lbl{font-size:8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.dp-kpi-val{font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:var(--text)}
+.dp-extra{background:#fff;border-radius:7px;padding:8px 10px;border:1px solid var(--border);font-size:10px}
+.dp-extra-lbl{font-size:8px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.dp-extra-val{font-weight:600;color:var(--text)}
+/* Clickable table rows */
+#tBody tr{cursor:pointer;transition:background .12s}
+#tBody tr:hover{background:#f0f4fb}
+
+
+/* ── Snapshot banner ─────────────────────────────────────── */
+.snap-banner{background:linear-gradient(135deg,#065f46,#059669);color:#fff;
+  padding:6px 16px;font-size:10px;font-weight:600;display:flex;align-items:center;
+  gap:8px;justify-content:center}
+.snap-banner a{color:#6ee7b7;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="header">
+  <div class="logo" style="padding:0;background:none"><img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAB4AF8DASIAAhEBAxEB/8QAHAAAAgIDAQEAAAAAAAAAAAAAAAcFBgIDBAgB/8QAPxAAAQMDAgQDBQYDBQkAAAAAAQIDBAAFEQYSByExQRNRcRQiMmGBCBUjUpGxM6HBFiRz0fA1QkRTYoKE4fH/xAAbAQACAwEBAQAAAAAAAAAAAAAABAECBQYDB//EADYRAAEDAgQDBgMHBQEAAAAAAAECAxEABAUSITETQVEUIjJhcYGRofAGFUKxwdHxI1KisuHy/9oADAMBAAIRAxEAPwDxlRRRRRRRRTK4V6IiXSH99XhsusFRSwxnAXjqpXy+VMWtsu5c4aKSxC/ZsGS87t8yelL+32+dcXgzBiPyXD/utoKqutj4W3uXtcuLzNvbPVJO9f6DkP1pmtXi0RFG3WWGua6g7fAtzG4A+SlD3R9TXW1B1XceazDsjJ/8h/H8kJ/nW8xhDCfESs+W3x/6K4u9+1N2odwBodVan2G/yNV+0cP9LWZsSJaBKUnmXZawED/t6frml1eLPddXatmv6ftTr0QubGloRsaCUjAOTgAcqeMPRtoQ6l+4e0XeSDkOTnPEAPyR8I/Sui86htVnjrYZdbfmIQfAgxRvcWrskIT0504/hzSmwFwhI103Pv8AzWPZ/aC4bfKmZecIgTMD0H/mvLlyhvW+4SIMjb40d1TS9pyNyTg4Nc9NbT3BTXOo5a590aas7L6y6tyWr8Q5OSQgc/1xSwuDCI0+RGbdDyGnVIS4BjeASAcfOuTdZWjvEQDtNfT7a6be7iVAqETFaKKKK8aaooooooop56JjG92izWFDi27exBTIuBbVtU5uUdjWR0BIJPyGKRlOXgzdHIWiLtNQ0JEwSWYsVr86yMNp9Nyq1sIWkPFKtiNfQa1zP2pbWbQKb8QIj1OgPtOnQ60zJM6y6disxCpiGhXusRmUZWv5JQkZP6VsiI1beMfdGnTBYPSXdl+EMeYaTlZ9DirborSMPT7PtT+2be30gzJ7gytau6U/lQOgA8qkNR6jsWnY5kXy7RYKewdcG5XonqT9K6NdwsiZyj65/t8a4FnDmUqiC4o9ZgnyA1PudelViJw7VKAVqbUM645+KNFPssf0wn31D1VVrsdis1jZ8Kz2uJBT3LTYCj8yrqfqaT+r/tD2iLvY0za3bg4OQkSctt+oT8R+uKTesOJ2tNUb27heHWoyv+Gi/hN48iBzP1JrKdxG3bMjvH65mumtcCvX0wqEJ6bf4j9Yr0Hxq4o2fTmn5lstVwZl3yShTKEMLCvZ8jBWojkCB0HXNeSqKKxbq6VcqzKrrsOw5uwbKEGSdzRRRRStaFFFFFFFFMngJPK9a2WxKTlp25olk/8AU22vaP1/altUzoi+K03qu33xCCsw3fE2g4J5Ef1r2t3OG4FfUUrescdhSIkxp68qd/HXjFPt91kaY0o+GFsHZLnJ5q390I8sd1efSvPs2XKmyVSZkl6Q8s5U46sqUfqa+Sn3ZUp2S8rc66srWrzJOSa1Va4uVvrKlGqWNg1ZthCBrzPM0UUUUvTtFFFFFFFFFFFFFbmYkp5suMxnnEDqpLZIH1pj8GNKWOVb7trfV6VL0/ZAMxwcGU8fhb9OnLvkVIyuP2q2ZPh6ft9ntFsQcNw24iVDb5KPc48sVjPYk+t5TNm1nKPESrKAd42JJjfSB1qwSIk0oSCDg8jTS4hWa1Q+B2grpFgR2Zstcn2h9CcLdwrluPfGKm7yzYeLWhrpqO2WmPaNW2Vrx5rEYYals91geY5/PtzyK+azt0m78EuFtrho3yZcl9loealLwP3rOfxTjO2+YFCkuELBO39NR3GhB3BqwTE0lW0LcWENoUtR6BIyTWciO/HUEvsOtE9AtBTn9aeWqdU2Xg86NJ6LtcGXfmEJ+8rvKaDig6RkpQO2M+g+dcVh4yp1NJTY+J1ot10tUpQbVLQwG3o2eQWCOw68sGmU4teOt9oZt5a3HehRHUJj4AkE1GUbTUH9nPT7N24jRU3az+2W5UZ8/jslTRUEHHMjFUS8WubGushgW+S0nxXPDSWlDKUk9OXQCvSvD2fqvSvFuPwykXRMvTjERx6BllAUpkpKke8BnIOR9KiODut9Sa24uPW/UE1EhiHEmNsJSyhG0KISeg58uXOsb76um7h+7SlKmw2lXiO0qgxl3PMcupq2UQBXnONGkSV7I7Dryh2bQVH+VYBtZc8MIUV5xtxzz5Yp36l4sJ0lc16Y4WWuBb4kV0sqmqZDr0pzOCcntnpnOflUhqe9W3g/HZjsW2Hd9eXJHtlynSmwpMYuHdtSnsc56Y8z1xWv983UpHZ9V+BObUgblWkJA05kyYiarlHWkJIiyY4BfjvNA9CtBTn9a0047Xx3u9xkCDru02u/Wd47HmzFShaEnqUEdx/o1WONOjIek7/FkWV4yLFdo4mW5wnJCD1ST3xkc/IinLbEXuOLe7byKUCUkHMkxuJgEEbwRttUECJFMbgReXG+C2pI1stMO8XK3Sky1QJCdweaIGVY7kYOPmKrp43oBweHmlwf8D/1S60Vqm86PvzV5scnwZCPdUkjKHEnqlQ7g0yXuJvDe6vfeF/4Vx3bmr3nVxZRbbcV5lP/ANrEusHDV266q3LqVme6qCDABBBUkEaSDvyqwVI3rNfGy6sWiQ7C0JZbezNaXG9qaYUlKsjmMjAOM5xmrBFuMa0aE4M3GYoJjs3F0uKPRIKyM/TOaWfE7iRM1lGh2mNbIlmscElUaDGSMBXTco9zj0rRqnWrV64caZ0miAtlyyqeK3y4CHd5yMDHKp+486GsrPDlRzAKkhORaRJPPXlO9Gbzpt8XuIczSGuJtumaC09LacV40aY8zkyWz0UTjmexqqxOMzsuQmPE4a6bkPL+FtqKVKPoAM1G6a4toOnmNOa605F1VbYw2x1vL2SGh2AX/o1IDi7prT0N8cPtBRbLPeQUGdId8ZxAP5c/54pRrCCw2GFWedY0zBcJPme9I8xlPlU5p1mp/hVrmdrvjxbJ863xYKotsfjoaYBwAEk88+tQv2cSU8YLyQcEQ5hB+tUjhZrQaP12jU02K5cDseS4hKwlSlLSeeceZrq4Xaz/ALKauuWpHLYuYy7GebW2hwJKC6cJOT2yRTl5hDiEXLduiEqbSlInmCqRr6jfrUBW01VbbKRC1JGmup3IYmJdUPMJWCf2pk/aitklHEBOom9z1rvEVp6JIHNCgEAFIPy5H0NKle91a3Ag4KsnHQZNMbRHFKVZLEdKanskXUdhQr3Ysrktj5IVzx/TtWtfsPofbu7dOYpBSUzBIMHQnSQQN9+tVBEQaXMZh6TIbjx2luvOqCEIQMqUo8gAKd/2iLPIsPDXQFpm85cSMtt3vtVtSSn6E4+lRh4qaQsKFydCcO4lquqgQmbLeL5Zz3QD0NVviJxCe1jpTT1rmMPqnW0OmVLdcCvHUs5yBjlypJzt15e27pZKG0EzJGbVJE6EgDluSZ20qdADrVe04uKmPKzj2zKPCJcSk7ee7BUCM9PpXU5OhocaaZZiMtOzVCQn3XPw9rY+LHw53EY71WqK3lWwUsqJ3qs1aHHLaiAUMNNuxgyQpJfQk+JzG7BTuznmMHmBWlyWw/dpIZENrw2dsL3QGwv3cnyyRu5nvVdrbGfdjPB1le1YyM4zyPWqi1AkzJomrFdmW5FsitqMFE5bIWtxKkpC8OOA5PTdjGfSonUDTcbUMxlsNlDchSQE/CQD+1a03ScH1P8Aj5WQE5KQQAOmBjAx2xXI4tTi1LWoqUo5JJySalllaDqdNfn+1BNWaSqI5LaeU7FQ4pLoaZUpC0NKxlJ3AD3c8gD0xzzWUZ+GgKTOeimQ4ylL20jaT4nu5xyyBgnHYCqrRVeyCImiasbK2YVldiB+OJKhl3aoK3I3jlnoTjJx5VtSqJ4390cgpje0O+1BePeRvO3GeZG3GMd6q9FSbWZM7/X8UTVielwlqMZKY3sqIaVNpKQCXQAeZHPd1Brm1GWnEMupdbCySPBSpC9g7YUkDl5A8/WoairotwlQIO1E1deEHDu7cRtS/dcBQYjMgLlSVDIaTnkAO6j2FPe8/Z107a0x4o9rfddUGy669tOT3wBgVt+y+lrTeho14htrkJuCluSlp5ltaFFO36DBx86dN3t151pblOtqYgskZQuSSCv0A5gfOt61dsmGOM6tABmSYMHbw76dK5LE7p+4cWyzmCknQCRPnPQ/D3ryJxr4GXzh/GN2ivt3O1DHirbP4kfPQqH5e2aUsZh6S6Go7S3VnntSMmvR/Fpq46dlT482WJSBFWVEOKKHUkEbTn50keH3+0pP+Af3FLWmHLU40lbwcS5qFJTl09JP6emladviS1261lBBRyJn51AswpTzLrzTC1NtfxFAck+tbItsnyWfGYiOrbzjcByqxWcMDTl68Bbihg53pCe3yJr5dvBGj7UHXHW0n/lpBycd+YpxOGthviKP4Z3H90b16m+XnyAfijn0naq8LZPMr2URVl7bu2DrjzrAQZnszkn2dzwW1bVrI5A+VdFrccbvUZVuW645vAG9OCfMcieVWPiCXm4jDTSAmMtZU4U91/P+debVk05buPa93lvvtr+dejl04h5DWne9vXT8qqLkaQ2204tlaUO/wyR8XpWwW+cZYieyu+ORuDZHPGM1bbqB7Xp0YGPd/pXYAH9XhYA8SLlCvmhScg/Q5H1FNpwZBXlzHxJHxEn68qXOJqCc2XkT8DAqisQJr8hbDMZxbrfxpA+H1r7Lt82I2HJEdTaCcAnHWrXbjiLqNQODvVzHoarkq1vs2Zi5rfSpt5WAjnkdf8qUfsEtthSQSYJ5aAGPemGrwrWQqAJA9SRNT3DzX140g4qOw8ty3urC3I+eQV+dPkf3p42j7QUJu3bXXNy9vLeop/kBRRWKvD7O8GW4aCufMf6kUXFmkucZKilR0MHf2Mik9xT4gvaqkuIY3BpwjxFkY3AdEgeX71SrZcZVueU7FUlKlJ2nIzyoopvjKSUlHdyiABoAByFe7No003wwJB3nn61lGucuPEkRWlJDcj+ICnma3N3uYmG1EUlh1pr4A40FYooqU3TyRAUentvV1MNK3SKwZu0lieJrLcdt0J2ja0AB88edfHLvOchOw3XA406srVuGSDnPI9qKKO0vQRmMGfnvU8BuZyj+K+vXic8qKpbiSqLjwjtHL18+lZIvdwRc13FLiQ+tO1R28iPSiip7W/M5z135jSo7O1EZRRFvU6OqSUKbIkq3OpUgEE1jOu8uZDREd8JLKDlKUICQKKKO1vFOTMYo7O1mzZRNf//Z" alt="Eletra · Hexing" style="height:40px;object-fit:contain;display:block;border-radius:4px"></div>
+  <div class="header-info">
+    <h1 id="hTitle">COMEX · FUP — Processos de Importação</h1>
+    <div class="sub" id="hSub">Follow-Up de Processos · Eletra Energy Solutions · 进口流程跟进</div>
+  </div>
+  <div class="header-right">
+    <span class="last-up" id="lastUpTxt"></span>
+    <div class="conn-pill" id="connPill"><div class="conn-dot"></div><span id="connTxt">Manual</span></div>
+    <div class="lang-wrap">
+      <button class="lang-btn act" onclick="setLang('pt')" id="lpt">PT</button>
+      <button class="lang-btn" onclick="setLang('en')" id="len">EN</button>
+      <button class="lang-btn" onclick="setLang('zh')" id="lzh">中文</button>
+    </div>
+    <!-- upload/snap buttons moved to filter row -->
+  </div>
+</header>
+
+<!-- ═══════════ UPLOAD PANEL ═══════════ -->
+<div class="upanel" id="upanel">
+  <div class="upanel-inner">
+    <div class="utabs">
+      <button class="utab act" id="tabUpload">📁 Upload Excel</button>
+    </div>
+    <!-- UPLOAD TAB -->
+    <div class="utab-content act" id="tcUpload">
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('xlsxInp').click()">
+        <div class="dz-ico">📊</div>
+        <p id="dzText">Arraste e solte o arquivo <strong>COMEX - FUP Processes - UPDATE online.xlsx</strong></p>
+        <p style="font-size:10px;color:#94a3b8" id="dzSub">ou clique para selecionar · suporta .xlsx e .xls</p>
+        <div class="dz-btn" id="dzBtn">Escolher Arquivo</div>
+        <input type="file" id="xlsxInp" accept=".xlsx,.xls" onchange="handleUpload(event)">
+      </div>
+      <div class="ulog" id="ulogUpload"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<div class="main">
+
+  <div class="last-update-bar" id="lastUpdateBar"></div>
+
+  <!-- PLACEHOLDER (antes do upload) -->
+  <div class="placeholder-state" id="phState">
+    <div class="ph-ico" id="phIco">⏳</div>
+    <h2 id="phH2">Carregando dados...</h2>
+    <p id="phP">Faça upload da planilha COMEX - FUP Processes - UPDATE online.xlsx</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px">
+      <button class="ph-upload-btn" onclick="togglePanel()">📂 <span id="phBtnTxt">Carregar Planilha</span></button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (hidden until data loaded) -->
+  <div id="dashContent" style="display:none">
+
+    <!-- KPIs -->
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi c-blue"   id="kpiTotal"     data-kid="total"     onclick="kpiClick('total',     ()=>{})"><div class="kpi-lbl" id="kLblTotal">Total</div><div class="kpi-val" id="kTotal">0</div><div class="kpi-sub" id="kSubTotal">processos</div></div>
+      <div class="kpi c-amber"  id="kpiAtivos"    data-kid="active"    onclick="kpiClick('active',    ()=>{ kpiFilter='active'; })"><div class="kpi-lbl" id="kLblAtivos">Ativos</div><div class="kpi-val" id="kAtivos">0</div><div class="kpi-sub" id="kSubAtivos">em andamento</div></div>
+      <div class="kpi c-gray"   id="kpiAguard"    data-kid="waiting"   onclick="kpiClick('waiting',   ()=>{ statusFilter='WAITING'; })"><div class="kpi-lbl" id="kLblAguard">Ag. Chegada</div><div class="kpi-val" id="kAguard">0</div><div class="kpi-sub" id="kSubAguard">ag. chegada</div></div>
+      <div class="kpi c-purple" id="kpiCustoms"   data-kid="customs"   onclick="kpiClick('customs',   ()=>{ kpiFilter='customs_all'; })"><div class="kpi-lbl" id="kLblCustoms">Desembaraço</div><div class="kpi-val" id="kCustoms">0</div><div class="kpi-sub" id="kSubCustoms">em desembaraço</div></div>
+      <div class="kpi c-green"  id="kpiDelivered" data-kid="delivered" onclick="kpiClick('delivered', ()=>{ statusFilter='DELIVERED'; })"><div class="kpi-lbl" id="kLblDelivered">Entregues</div><div class="kpi-val" id="kDelivered">0</div><div class="kpi-sub" id="kSubDelivered">entregues</div></div>
+      <div class="kpi c-red"    id="kpiLate"      data-kid="late"      onclick="kpiClick('late',      ()=>{ kpiFilter='late'; })"><div class="kpi-lbl" id="kLblLate">Atrasados</div><div class="kpi-val" id="kLate">0</div><div class="kpi-sub" id="kSubLate">em atraso</div></div>
+      <div class="kpi c-cyan"   id="kpiP1"        data-kid="p1"        onclick="kpiClick('p1',        ()=>{ prioBarFilter=1; })"><div class="kpi-lbl" id="kLblP1">Prioridade P1</div><div class="kpi-val" id="kP1">0</div><div class="kpi-sub" id="kSubP1">urgentes</div></div>
+      <div class="kpi c-violet" id="kpiShipment"  data-kid="shipment"  onclick="kpiClick('shipment',  ()=>{ statusFilter='SHIPMENT'; })"><div class="kpi-lbl" id="kLblShipment">Ag. Embarque</div><div class="kpi-val" id="kShipment">0</div><div class="kpi-sub" id="kSubShipment">ag. embarque</div></div>
+    </div>
+
+    <!-- STATUS LEGEND -->
+    <div class="sl-bar" id="slBar">
+      <span class="sl-title">Status:</span>
+      <div class="sl-item"><div class="sl-dot" style="background:#6b7280"></div><span id="slWait">Ag. Chegada</span></div>
+      <span class="sl-pipe">|</span>
+      <div class="sl-item"><div class="sl-dot" style="background:#f59e0b"></div><span id="slTransit">Em Trânsito</span></div>
+      <span class="sl-pipe">|</span>
+      <div class="sl-item"><div class="sl-dot" style="background:#ec4899"></div><span id="slCustoms">Desembaraço</span></div>
+      <span class="sl-pipe">|</span>
+      <div class="sl-item"><div class="sl-dot" style="background:#3b82f6"></div><span id="slPending">Pend. Entrega</span></div>
+      <span class="sl-pipe">|</span>
+      <div class="sl-item"><div class="sl-dot" style="background:#059669"></div><span id="slDel">Entregue</span></div>
+      <span class="sl-pipe">|</span>
+      <div class="sl-item"><div class="sl-dot" style="background:#7c3aed"></div><span id="slShipment">Ag. Embarque</span></div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="charts-row">
+      <!-- Status Donut -->
+      <div class="chart-card">
+        <div class="chart-hdr">
+          <h3 id="cStatusTitle">Status · 状态分布</h3>
+          <span class="chart-pill" id="donutPill">0 total</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="chartStatus"></canvas>
+        </div>
+        <p style="font-size:9px;color:var(--muted);text-align:center;margin-top:7px;font-style:italic" id="cHint">Clique para filtrar · 点击筛选</p>
+      </div>
+      <!-- Priority Bar -->
+      <div class="chart-card">
+        <div class="chart-hdr"><h3 id="cPrioTitle">Prioridade · 优先级</h3></div>
+        <div class="prio-bars" id="prioBars"></div>
+      </div>
+      <!-- ETA Timeline -->
+      <div class="chart-card">
+        <div class="chart-hdr"><h3 id="cEtaTitle">ETE Real/Esperado — Próximas Entregas</h3></div>
+        <div class="eta-list" id="etaList"></div>
+      </div>
+    </div>
+    <!-- CONTROLS -->
+    <div class="controls">
+      <div class="ctrl-grp">
+        <label id="lSearch">Buscar:</label>
+        <input type="text" id="searchInp" placeholder="Processo..." oninput="applyFilters()" style="width:140px">
+      </div>
+      <div class="ctrl-grp">
+        <label id="lStatus">STATUS:</label>
+        <div class="ms-wrap">
+          <div class="ms-btn" onclick="toggleMs('statusDrop')" id="statusMsBtn">Todos ▾</div>
+          <div class="ms-dropdown" id="statusDrop" style="display:none">
+            <label><input type="checkbox" value="WAITING"   onchange="msChange('status')">Ag. Chegada</label>
+            <label><input type="checkbox" value="TRANSIT"   onchange="msChange('status')">Em Trânsito</label>
+            <label><input type="checkbox" value="CUSTOMS"   onchange="msChange('status')">Desembaraço</label>
+            <label><input type="checkbox" value="DELIVERED" onchange="msChange('status')">Entregue</label>
+            <label><input type="checkbox" value="SHIPMENT"  onchange="msChange('status')">Ag. Embarque</label>
+          </div>
+        </div>
+        <input type="hidden" id="statusSel" value="">
+      </div>
+      <div class="ctrl-grp">
+        <label id="lPrio">Prio.:</label>
+        <div class="ms-wrap">
+          <div class="ms-btn" onclick="toggleMs('prioDrop')" id="prioMsBtn">Todas ▾</div>
+          <div class="ms-dropdown" id="prioDrop" style="display:none">
+            <label><input type="checkbox" value="1" onchange="msChange('prio')"><span style="background:#dc2626;color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">P1</span> Urgente</label>
+            <label><input type="checkbox" value="2" onchange="msChange('prio')"><span style="background:#ea6c1a;color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">P2</span> Alta</label>
+            <label><input type="checkbox" value="3" onchange="msChange('prio')"><span style="background:#f59e0b;color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">P3</span> Média</label>
+            <label><input type="checkbox" value="4" onchange="msChange('prio')"><span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 6px;font-size:9px;font-weight:700">P4</span> Baixa</label>
+          </div>
+        </div>
+        <input type="hidden" id="prioSel" value="">
+      </div>
+      <div class="ctrl-grp">
+        <label id="lPeriod">ETA:</label>
+        <div class="ms-wrap">
+          <div class="ms-btn" onclick="toggleMs('etaDrop')" id="etaMsBtn">Todos ▾</div>
+          <div class="ms-dropdown" id="etaDrop" style="display:none;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div class="ctrl-grp">
+        <label id="lMonthProd">Mês Prod.:</label>
+        <div class="ms-wrap">
+          <div class="ms-btn" onclick="toggleMs('monthDrop')" id="monthMsBtn">Todos ▾</div>
+          <div class="ms-dropdown" id="monthDrop" style="display:none;max-height:240px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div class="ctrl-grp">
+        <label id="lMode">Modal:</label>
+        <div class="ms-wrap">
+          <div class="ms-btn" onclick="toggleMs('modeDrop')" id="modeMsBtn">Todos ▾</div>
+          <div class="ms-dropdown" id="modeDrop" style="display:none">
+            <label><input type="checkbox" value="SEA"  onchange="msChange('mode')">🚢 Marítimo</label>
+            <label><input type="checkbox" value="AIR"  onchange="msChange('mode')">✈️ Aéreo</label>
+            <label><input type="checkbox" value="ROAD" onchange="msChange('mode')">🚛 Rodoviário</label>
+          </div>
+        </div>
+        <input type="hidden" id="modeSel" value="">
+      </div>
+      <div class="grp-toggle" title="Filtrar por grupo de processos">
+        <button class="grp-btn act" id="grp-" data-g="" onclick="setGroupFilter('')">Todos</button>
+        <button class="grp-btn" id="grp-ELETRA" data-g="ELETRA" onclick="setGroupFilter('ELETRA')">🏭 Eletra</button>
+        <button class="grp-btn" id="grp-LIVOLTEK" data-g="LIVOLTEK" onclick="setGroupFilter('LIVOLTEK')">⚡ Livoltek</button>
+      </div>
+      <button class="clr-btn" onclick="clearFilters()" id="clrBtn">✕ <span id="lClear">Limpar</span></button>
+      <div style="flex:1"></div>
+      <button class="upload-hdr-btn" onclick="adminAction('update')" id="uploadToggle" title="Requer senha de administrador" style="font-size:10px;padding:5px 10px">📥 <span id="upBtnTxt">Atualizar</span></button>
+      <span id="activeChipSlot"></span>
+      <span class="results-ct" id="resultsCt"></span>
+    </div>
+
+    <!-- TABLE -->
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortBy('id')" id="thProc">Processo</th>
+            <th onclick="sortBy('prio')" id="thPrio" style="text-align:center">Prio.</th>
+            <th onclick="sortBy('group')" id="thGroup">Grupo</th>
+            <th onclick="sortBy('mode')" id="thMode">Modal</th>
+            <th onclick="sortBy('status')" id="thStatus">Status</th>
+            <th id="thStep">Etapa</th>
+            <th id="thNextStep">Próxima Etapa</th>
+            <th onclick="sortBy('resp')" id="thResp">Responsável</th>
+            <th onclick="sortBy('eta')" id="thEta">ETA</th>
+            <th onclick="sortBy('ete_dl')" id="thEteDl">ETE Previsto</th>
+            <th onclick="sortBy('ete_real')" id="thEte">ETE Real</th>
+            <th onclick="sortBy('ctnr')" id="thCtnr" style="min-width:40px">CTNR</th>
+            <th onclick="sortBy('analyst')" id="thAnalyst" style="min-width:80px">Analista</th>
+            <th onclick="sortBy('cc_days')" id="thDt">CC Days</th>
+            <th onclick="sortBy('month')" id="thMonth">Mês Prod.</th>
+            <th id="thObs" style="text-align:center;width:38px">Obs.</th>
+          </tr>
+        </thead>
+        <tbody id="tBody"></tbody>
+        <tfoot><tr><td colspan="16" id="tFoot">–</td></tr></tfoot>
+      </table>
+    </div>
+
+  </div><!-- /dashContent -->
+</div><!-- /main -->
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   TRANSLATIONS
+═══════════════════════════════════════════════════════════════ */
+const TR = {
+  pt:{
+    hTitle:'COMEX · FUP — Processos de Importação',hSub:'Follow-Up de Processos · Eletra Energy Solutions · 进口流程跟进',
+    upBtn:'Atualizar',phH2:'Nenhum dado carregado',phP:'Faça upload da planilha COMEX - FUP Processes - UPDATE online.xlsx para visualizar o dashboard.',phBtn:'Carregar Planilha',
+    kTotal:'Total',kAtivos:'Ativos',kAguard:'Ag. Chegada',kCustoms:'Desembaraço',kDel:'Entregues',kLate:'Atrasados',kP1:'Prioridade P1',
+    kSubTotal:'processos',kSubAtivos:'em andamento',kSubAguard:'ag. chegada',kSubCustoms:'em desembaraço',kSubDel:'entregues',kSubLate:'em atraso',kSubP1:'urgentes',
+    cStatus:'Status · 状态分布',cPrio:'Prioridade · 优先级',cEta:'ETE Real/Esperado — Próximas Entregas',
+    slWait:'Ag. Chegada',slTransit:'Em Trânsito',slCustoms:'Desembaraço',slPend:'Pend. Entrega',slDel:'Entregue',slShipment:'Ag. Embarque',prioTitle:'Prioridade',lBuscar:'BUSCAR:',lStatus:'STATUS:',lPrio:'PRIO.:',lEta:'ETA:',lMesProd:'MÊS PROD.:',lMode:'MODAL:',lClear:'Limpar',lAll:'Todos',lTodas:'Todas',lAtualizar:'Atualizar',lSalvar:'Salvar',
+    lSearch:'Buscar:',lStatus:'Status:',lPrio:'Prio.:',lMode:'Modal:',clr:'✕ Limpar',
+    selAll:'Todos', selAllF:'Todas', grpAll:'Todos',
+    thProc:'Processo',thPrio:'Prio.',thMode:'Modal',thStatus:'Status',thStep:'Etapa',thNext:'Próxima Etapa',thResp:'Responsável',thEta:'ETA',thEteDl:'ETE Previsto',thEte:'ETE Real',thDt:'CC Days',thMonth:'Mês Prod.',thObs:'Obs.',
+    statusLabels:{WAITING:'Ag. Chegada',TRANSIT:'Em Trânsito',CUSTOMS:'Desembaraço',DELIVERED:'Entregue',SHIPMENT:'Ag. Embarque'},
+    modeLabels:{SEA:'🚢 Marítimo',AIR:'✈️ Aéreo',ROAD:'🚛 Rodoviário'},
+    prioLabels:{1:'P1 – Urgente',2:'P2 – Alta',3:'P3 – Média',4:'P4 – Baixa',5:'P5 – Mín.'},
+    lastUp:t=>'Última atualização: '+t,
+    dzText:'Arraste e solte o arquivo COMEX - FUP Processes - UPDATE online.xlsx',dzSub:'ou clique para selecionar · suporta .xlsx e .xls',dzBtn:'Escolher Arquivo',
+    spUrlLbl:'URL de Download Direto (SharePoint)',spNote:'⚠️ O arquivo deve estar acessível no navegador (autenticado no SharePoint). Se houver erro de CORS, use o Upload Manual.',spBtn:'🔄 Buscar e Atualizar',
+    tabUpload:'📁 Upload Excel',tabOnline:'🌐 SharePoint Online',tabGsheets:'📗 Google Sheets',
+    gsUrlLbl:'URL CSV Publicado (Google Sheets)',gsBtnTxt:'Buscar e Atualizar',
+    gsRefreshOff:'⏸ Auto-refresh desligado',gsRefreshOn:(m)=>`🔄 Auto-refresh: ${m} min`,
+    cHint:'Clique para filtrar · 点击筛选',results:n=>n+' processos',footTxt:(f,t)=>'Exibindo '+f+' de '+t+' processos',
+    connManual:'Manual',connOk:'Conectado',lateTag:'ATRASADO',
+    ganttToday:'hoje',ganttDaysLeft:'d',ganttDaysAgo:'d atraso',
+    ganttLegOk:'No prazo',ganttLegWarn:'Atenção (≤2d)',ganttLegLate:'Atrasado',ganttLegDL:'DL previsto',ganttLegToday:'Hoje',
+    ganttNoEte:'sem ETE',
+  },
+  en:{
+    hTitle:'COMEX · FUP — Import Processes',hSub:'Process Follow-Up · Eletra Energy Solutions · 进口流程跟进',
+    upBtn:'Update',phH2:'No data loaded',phP:'Upload the COMEX - FUP Processes - UPDATE online.xlsx spreadsheet to view the dashboard.',phBtn:'Load Spreadsheet',
+    kTotal:'Total',kAtivos:'Active',kAguard:'Waiting Arrival',kCustoms:'Customs',kDel:'Delivered',kLate:'Late',kP1:'Priority P1',kShipment:'Waiting Shipment',
+    kSubTotal:'processes',kSubAtivos:'in progress',kSubAguard:'waiting arrival',kSubCustoms:'in customs clearance',kSubDel:'delivered',kSubLate:'overdue',kSubP1:'urgent',kSubShipment:'waiting shipment',
+    cStatus:'Status Distribution',cPrio:'Priority',cEta:'ETE Real/Expected — Upcoming Deliveries',
+    slWait:'Waiting Arrival',slTransit:'In Transit',slCustoms:'Customs Clearance',slPend:'Pend. Delivery',slDel:'Delivered',slShipment:'Waiting Shipment',prioTitle:'Priority',lBuscar:'SEARCH:',lStatus:'STATUS:',lPrio:'PRIORITY:',lEta:'ETA:',lMesProd:'PROD.MONTH:',lMode:'MODE:',lClear:'Clear',lAll:'All',lTodas:'All',lAtualizar:'Update',lSalvar:'Save',
+    lSearch:'Search:',lStatus:'Status:',lPrio:'Priority:',lMode:'Mode:',clr:'✕ Clear',
+    selAll:'All', selAllF:'All', grpAll:'All',
+    thProc:'Process',thPrio:'Prio.',thMode:'Mode',thStatus:'Status',thStep:'Stage',thNext:'Next Stage',thResp:'Responsible',thEta:'ETA',thEteDl:'ETE Planned',thEte:'ETE Real',thDt:'CC Days',thMonth:'Mês Prod.',thObs:'Notes',
+    statusLabels:{WAITING:'Waiting Arrival',TRANSIT:'In Transit',CUSTOMS:'Customs Clearance',DELIVERED:'Delivered',SHIPMENT:'Waiting Shipment'},
+    modeLabels:{SEA:'🚢 Sea',AIR:'✈️ Air',ROAD:'🚛 Road'},
+    prioLabels:{1:'P1 – Urgent',2:'P2 – High',3:'P3 – Medium',4:'P4 – Low',5:'P5 – Min.'},
+    lastUp:t=>'Last update: '+t,
+    dzText:'Drag & drop COMEX - FUP Processes - UPDATE online.xlsx here',dzSub:'or click to select · supports .xlsx and .xls',dzBtn:'Choose File',
+    spUrlLbl:'Direct Download URL (SharePoint)',spNote:'⚠️ The file must be accessible in the browser (authenticated to SharePoint). If CORS error, use Manual Upload.',spBtn:'🔄 Fetch & Update',
+    tabUpload:'📁 Excel Upload',tabOnline:'🌐 SharePoint Online',tabGsheets:'📗 Google Sheets',
+    gsUrlLbl:'Published CSV URL (Google Sheets)',gsBtnTxt:'Fetch & Update',
+    gsRefreshOff:'⏸ Auto-refresh off',gsRefreshOn:(m)=>`🔄 Auto-refresh: ${m} min`,
+    cHint:'Click to filter · 点击筛选',results:n=>n+' processes',footTxt:(f,t)=>'Showing '+f+' of '+t+' processes',
+    connManual:'Manual',connOk:'Connected',lateTag:'LATE',
+    ganttToday:'today',ganttDaysLeft:'d',ganttDaysAgo:'d late',
+    ganttLegOk:'On time',ganttLegWarn:'Attention (≤2d)',ganttLegLate:'Late',ganttLegDL:'Planned DL',ganttLegToday:'Today',
+    ganttNoEte:'no ETE',
+  },
+  zh:{
+    hTitle:'COMEX · 进口流程跟进',hSub:'进口流程跟进 · Eletra Energy Solutions',
+    upBtn:'更新',phH2:'未加载数据',phP:'请上传 COMEX - FUP Processes - UPDATE online.xlsx 文件以查看仪表板。',phBtn:'加载文件',
+    kTotal:'合计',kAtivos:'进行中',kAguard:'等待到港',kCustoms:'清关中',kDel:'已交付',kLate:'已逾期',kP1:'P1优先级',kShipment:'等待发货',
+    kSubTotal:'流程',kSubAtivos:'进行中',kSubAguard:'等待到港',kSubCustoms:'清关中',kSubDel:'已交付',kSubLate:'逾期',kSubP1:'紧急',kSubShipment:'等待发货',
+    cStatus:'状态分布',cPrio:'优先级',cEta:'实际/预期ETE — 近期交付',
+    slWait:'等待到港',slTransit:'运输中',slCustoms:'清关中',slPend:'待交付',slDel:'已交付',slShipment:'等待发货',prioTitle:'优先级',lBuscar:'搜索:',lStatus:'状态:',lPrio:'优先级:',lEta:'预计到港:',lMesProd:'生产月份:',lMode:'运输方式:',lClear:'清除',lAll:'全部',lTodas:'全部',lAtualizar:'更新',lSalvar:'保存',
+    lSearch:'搜索:',lStatus:'状态:',lPrio:'优先级:',lMode:'运输方式:',clr:'✕ 清除',
+    selAll:'全部', selAllF:'全部', grpAll:'全部',
+    thProc:'流程',thPrio:'优先级',thMode:'运输',thStatus:'状态',thStep:'阶段',thNext:'下一阶段',thResp:'负责人',thEta:'预计到港',thEteDl:'计划ETE',thEte:'实际/预期ETE',thDt:'CC天数',thMonth:'生产月份',thObs:'备注',
+    statusLabels:{WAITING:'等待到港',TRANSIT:'运输中',CUSTOMS:'清关中',DELIVERED:'已交付',SHIPMENT:'等待发货'},
+    modeLabels:{SEA:'🚢 海运',AIR:'✈️ 空运',ROAD:'🚛 陆运'},
+    prioLabels:{1:'P1 – 紧急',2:'P2 – 高',3:'P3 – 中',4:'P4 – 低',5:'P5 – 最低'},
+    lastUp:t=>'上次更新: '+t,
+    dzText:'拖放 COMEX - FUP Processes - UPDATE online.xlsx 文件到此处',dzSub:'或点击选择 · 支持 .xlsx 和 .xls',dzBtn:'选择文件',
+    spUrlLbl:'SharePoint 直接下载链接',spNote:'⚠️ 文件需在浏览器中可访问（已登录SharePoint）。若出现CORS错误，请使用手动上传。',spBtn:'🔄 获取并更新',
+    tabUpload:'📁 上传Excel',tabOnline:'🌐 SharePoint在线',tabGsheets:'📗 Google表格',
+    gsUrlLbl:'已发布CSV链接 (Google Sheets)',gsBtnTxt:'获取并更新',
+    gsRefreshOff:'⏸ 自动刷新已关闭',gsRefreshOn:(m)=>`🔄 自动刷新: ${m} 分钟`,
+    cHint:'点击筛选',results:n=>n+' 个流程',footTxt:(f,t)=>'显示 '+f+' / '+t+' 个流程',
+    connManual:'手动模式',connOk:'已连接',lateTag:'逾期',
+    thResp:'负责人',
+    ganttToday:'今天',ganttDaysLeft:'天',ganttDaysAgo:'天逾期',
+    ganttLegOk:'准时',ganttLegWarn:'注意 (≤2d)',ganttLegLate:'逾期',ganttLegDL:'计划DL',ganttLegToday:'今天',
+    ganttNoEte:'无ETE',
+  }
+};
+
+let currentLang='pt', PROCS=[], lastUpTime='', sortKey='prio', sortDir=1, chartStatusObj=null, statusFilter=null;
+let kpiFilter=null;      // 'active' | 'customs_all' | 'late' | null
+let prioBarFilter=null;  // 1|2|3|4|5|null
+let kpiActive=null;      // id string of active KPI card
+
+/* ═══════════ KPI CLICK FILTER ═══════════ */
+const KPI_IDS=['kpiTotal','kpiAtivos','kpiAguard','kpiCustoms','kpiDelivered','kpiLate','kpiP1'];
+
+function updateKpiState(){
+  KPI_IDS.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.toggle('kpi-act', el.dataset.kid===kpiActive);
+  });
+}
+
+function kpiClick(key, applyFn){
+  // Toggle: same card clicked again → clear everything
+  if(kpiActive===key){ clearFilters(); return; }
+  // Reset all filters
+  kpiActive=key; kpiFilter=null; prioBarFilter=null; statusFilter=null;
+  document.getElementById('searchInp').value='';
+  document.getElementById('statusSel').value='';
+  document.getElementById('prioSel').value='';
+  document.getElementById('modeSel').value='';
+  activeGroupFilter='';
+  ['','ELETRA','LIVOLTEK'].forEach(v=>{const el=document.getElementById('grp-'+v);if(el)el.className='grp-btn'+(v===''?' act':'');});
+  // Apply the specific filter action
+  applyFn();
+  updateKpiState();
+  buildEtaMonthOptions();
+  buildStatusChart(); buildEtaList(); buildPrioBars();
+  // Show snapshot button after data is loaded
+  const sb=document.getElementById('snapBtn');if(sb)sb.style.display=''; applyFilters();
+}
+
+function prioBarClick(pr){
+  // Toggle
+  const newPr = prioBarFilter===pr ? null : pr;
+  // Keep KPI active if one was set; priority bar adds to it
+  if(!kpiActive) kpiActive = newPr ? 'prio'+newPr : null;
+  prioBarFilter = newPr;
+  // Don't reset kpiFilter or statusFilter when clicking priority bar
+  document.getElementById('prioSel').value = newPr ? String(newPr) : '';
+  // Deactivate all KPI cards
+  KPI_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('kpi-act'); });
+  buildPrioBars(); applyFilters();
+}
+
+/* ═══════════ LANG ═══════════ */
+function setLang(l){
+  currentLang=l;
+  ['pt','en','zh'].forEach(x=>{document.getElementById('l'+x).className='lang-btn'+(x===l?' act':'');});
+  const t=TR[l];
+  setText('hTitle',t.hTitle);setText('hSub',t.hSub);setText('upBtnTxt',t.upBtn);
+  setText('phH2',t.phH2);setText('phBtnTxt',t.phBtn);
+  setText('kLblTotal',t.kTotal);setText('kLblAtivos',t.kAtivos);setText('kLblAguard',t.kAguard);setText('kLblCustoms',t.kCustoms);setText('kLblDelivered',t.kDel);setText('kLblLate',t.kLate);setText('kLblP1',t.kP1);
+  setText('kSubTotal',t.kSubTotal);setText('kSubAtivos',t.kSubAtivos);setText('kSubAguard',t.kSubAguard);setText('kSubCustoms',t.kSubCustoms);setText('kSubDelivered',t.kSubDel);setText('kSubLate',t.kSubLate);setText('kSubP1',t.kSubP1);
+  setText('cStatusTitle',t.cStatus);setText('cPrioTitle',t.cPrio);setText('cEtaTitle',t.cEta);
+  setText('slWait',t.slWait);setText('slTransit',t.slTransit);setText('slCustoms',t.slCustoms);setText('slPending',t.slPend);setText('slDel',t.slDel);if(t.slShipment)setText('slShipment',t.slShipment);
+  setText('lSearch',t.lSearch||t.lBuscar||'BUSCAR:');
+  setText('lStatus',t.lStatus||'STATUS:');
+  setText('lPrio',t.lPrio||'PRIO.:');
+  setText('lPeriod',t.lEta||'ETA:');
+  setText('lMonthProd',t.lMesProd||'MÊS PROD.:');
+  setText('lMode',t.lMode||'MODAL:');
+  setText('lClear',t.lClear||'Limpar');
+  setText('upBtnTxt',t.lAtualizar||t.upBtn||'Atualizar');
+  setText('saveBtnTxt',t.lSalvar||'Salvar');
+  // Reset multi-select "all" button texts when nothing selected
+  const allLbl=t.lAll||'Todos';
+  [['statusMsBtn',msStatusSel],['prioMsBtn',msPrioSel],['etaMsBtn',msEtaSel],
+   ['monthMsBtn',msMonthSel],['modeMsBtn',msModeSel]].forEach(([id,arr])=>{
+    const b=document.getElementById(id);
+    if(b&&!arr.length) b.textContent=allLbl+' ▾';
+  });
+  setText('thProc',t.thProc);setText('thPrio',t.thPrio);setText('thMode',t.thMode);setText('thStatus',t.thStatus);setText('thStep',t.thStep);setText('thNextStep',t.thNext);setText('thResp',t.thResp);setText('thEta',t.thEta);setText('thEteDl',t.thEteDl);setText('thEte',t.thEte);setText('thDt',t.thDt);setText('thMonth',t.thMonth);setText('thObs',t.thObs);
+  setText('cHint',t.cHint);setText('tabUpload',t.tabUpload);
+  setText('gsUrlLbl',t.gsUrlLbl);setText('gsBtnTxt',t.gsBtnTxt);
+  const _gint=document.getElementById('gsInterval');
+  if(_gint&&parseInt(_gint.value)===0) setText('gsRefreshBadge',t.gsRefreshOff);
+  setText('dzText',t.dzText);setAttr('dzBtn',t.dzBtn);setText('spUrlLbl',t.spUrlLbl);setText('spNote',t.spNote);setText('spBtnTxt',t.spBtn);
+  setText('connTxt',t.connManual);
+  if(lastUpTime) setText('lastUpTxt',t.lastUp(lastUpTime));
+  updateSelectOptions(t);
+  if(PROCS.length) render();
+}
+function setText(id,v){ const el=document.getElementById(id); if(el) el.textContent=v; }
+function setAttr(id,v){ const el=document.getElementById(id); if(el) el.textContent=v; }
+
+/* ─── Update <select> option texts and group buttons on lang change ─── */
+function updateSelectOptions(t){
+  // STATUS select
+  const ss=document.getElementById('statusSel');
+  if(ss){ const cur=ss.value;
+    ss.innerHTML=`<option value="">${t.selAll}</option>`
+      +Object.entries(t.statusLabels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    ss.value=cur; }
+  // PRIORITY select
+  const ps=document.getElementById('prioSel');
+  if(ps){ const cur=ps.value;
+    ps.innerHTML=`<option value="">${t.selAllF}</option>`
+      +[1,2,3,4].map(p=>`<option value="${p}">${t.prioLabels[p]}</option>`).join('');
+    ps.value=cur; }
+  // MODE select
+  const ms=document.getElementById('modeSel');
+  if(ms){ const cur=ms.value;
+    ms.innerHTML=`<option value="">${t.selAll}</option>`
+      +Object.entries(t.modeLabels).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+    ms.value=cur; }
+  // Group "All" button
+  const gb=document.getElementById('grp-');
+  if(gb) gb.textContent=t.grpAll;
+}
+
+/* ═══════════ PANEL ═══════════ */
+let panelOpen=false;
+function updateLastUpBar(){
+  const bar=document.getElementById("lastUpdateBar");
+  if(bar&&lastUpTime) bar.innerHTML='<span>🕒 Última atualização: '+lastUpTime+' · Aba: FUP - Status details</span>';
+}
+
+function togglePanel(forceClose){
+  panelOpen = forceClose?false:!panelOpen;
+  const _p=document.getElementById('upanel');
+  _p.style.display='';
+  _p.className='upanel'+(panelOpen?' open':'');
+}
+function switchUTab(t){
+  ['Upload','Online','Gsheets'].forEach(x=>{
+    document.getElementById('tab'+x).className='utab'+(x.toLowerCase()===t?' act':'');
+    document.getElementById('tc'+x).className='utab-content'+(x.toLowerCase()===t?' act':'');
+  });
+}
+
+/* ═══════════ EXCEL COLUMN HELPERS ═══════════ */
+function colIdx(col){
+  // Bijective base-26: A=0, B=1, ..., Z=25, AA=26, AB=27 ...
+  col=col.toUpperCase(); let n=0;
+  for(let i=0;i<col.length;i++) n=n*26+(col.charCodeAt(i)-64);
+  return n-1; // 0-indexed
+}
+
+function xlDate(v){
+  // Accepts: Excel serial number (>1000 = after 1902, safe date), formatted string, Date object.
+  // REJECTS: integers ≤ 366 — these are CC Days counts (1–365), never real dates in this dataset.
+  if(v===null||v===undefined||v==='') return '';
+  if(v instanceof Date){
+    if(isNaN(v)) return '';
+    return pad(v.getDate())+'/'+pad(v.getMonth()+1)+'/'+v.getFullYear();
+  }
+  if(typeof v==='number'){
+    if(v<=366) return ''; // ← guard: CC Days (1–365) must NOT be treated as date serial
+    if(v<=0) return '';
+    // Excel date cells with time "23:59:31" store fractional part .99967592592.
+    // Math.round() safely normalises them to the correct calendar day.
+    // epoch Dec 30 1899 already absorbs the Excel 1900 leap-year bug — no v-- needed.
+    const serial = Math.round(v);
+    const d=new Date(Date.UTC(1899,11,30)+serial*86400000);
+    if(isNaN(d)) return '';
+    return pad(d.getUTCDate())+'/'+pad(d.getUTCMonth()+1)+'/'+d.getUTCFullYear();
+  }
+  if(typeof v==='string'){
+    const s=v.trim();
+    if(!s) return '';
+    if(/^\d+$/.test(s)) return ''; // plain integer string → not a date
+    // DD/MM/YYYY (BR/EU)
+    if(/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+    // YYYY-MM-DD (ISO)
+    if(/^\d{4}-\d{2}-\d{2}/.test(s)){
+      const [yr,mo,dy]=s.split('-'); return dy.padStart(2,'0')+'/'+mo+'/'+yr;
+    }
+    // M/D/YYYY or MM/DD/YYYY (Google Sheets CSV US locale)
+    const usMatch=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(usMatch){
+      const [,m,d,y]=usMatch;
+      // Ambiguous: assume US locale (M/D/YYYY) from Google Sheets CSV
+      return d.padStart(2,'0')+'/'+m.padStart(2,'0')+'/'+y;
+    }
+    // Numeric string representing a serial (e.g. from CSV passthrough)
+    if(/^\d+(\.\d+)?$/.test(s)){
+      const n=parseFloat(s);
+      if(n>366) return xlDate(n); // recurse with number
+    }
+  }
+  return '';
+}
+
+function isValidDate(v){
+  if(!v&&v!==0) return false;
+  if(typeof v==='number') return v>366;
+  if(v instanceof Date) return !isNaN(v);
+  if(typeof v==='string'){
+    const s=v.trim();
+    return /^\d{2}\/\d{2}\/\d{4}$/.test(s)   // DD/MM/YYYY
+        || /^\d{4}-\d{2}-\d{2}/.test(s)        // ISO
+        || /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s); // M/D/YYYY (CSV)
+  }
+  return false;
+}
+
+function isDatePast(v){
+  // Returns true if the date represented by v is on or before today
+  const s=xlDate(v);
+  if(!s) return false;
+  const [d,m,y]=s.split('/');
+  return new Date(+y,+m-1,+d)<=new Date();
+}
+
+function readNum(v){
+  // Read a numeric cell (e.g. CC Days / DT column). Returns integer string or ''.
+  // With cellDates:false, numeric cells always come as numbers.
+  // Protects against: Date objects (shouldn't occur), serial-date numbers (>1000),
+  // formula errors (booleans), and zero/negative.
+  if(v===null||v===undefined||v==='') return '';
+  if(typeof v==='boolean') return '';
+  if(v instanceof Date) return ''; // shouldn't happen with cellDates:false
+  if(typeof v==='number'){
+    if(v<=0) return '';
+    if(v>1000) return ''; // suspiciously large → likely a date serial leaked in
+    return String(Math.round(v));
+  }
+  if(typeof v==='string'){
+    const n=parseFloat(v.trim());
+    if(!isNaN(n)&&n>0&&n<=1000) return String(Math.round(n));
+  }
+  return '';
+}
+
+function pad(n){ return String(n).padStart(2,'0'); }
+
+const MONTH_ABBR=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const MONTH_ABBR_PT=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function serialToMonth(v){
+  // Converts an Excel date serial (possibly with time fraction) to "Abr/26" (PT) string
+  const serial=Math.round(v);
+  if(serial<=366||serial<=0) return '';
+  const d=new Date(Date.UTC(1899,11,30)+serial*86400000);
+  if(isNaN(d)) return '';
+  return MONTH_ABBR_PT[d.getUTCMonth()]+'/'+String(d.getUTCFullYear()).slice(-2);
+}
+function parseMonth(raw){
+  // raw may be: text "MAY_2026", number 46142.999, string "46142.999", or "4/30/26" (Excel M/D/YY)
+  if(!raw&&raw!==0) return '';
+  if(typeof raw==='number') return serialToMonth(raw)||String(raw);
+  const s=String(raw).trim();
+  // Numeric serial as string (e.g. "46142" or "46142.999")
+  if(/^\d{4,6}(\.\d+)?$/.test(s)){
+    const n=parseFloat(s);
+    if(n>366) return serialToMonth(n)||s;
+  }
+  // Excel display format M/D/YY or M/D/YYYY (e.g. "4/30/26" or "4/30/2026")
+  const mdyMatch=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(mdyMatch){
+    const month=parseInt(mdyMatch[1]);
+    let year=parseInt(mdyMatch[3]);
+    if(year<100) year+=2000;
+    if(month>=1&&month<=12) return MONTH_ABBR_PT[month-1]+'/'+String(year).slice(-2);
+  }
+  // Legacy text format "MAY_2026" or "MAY_26"
+  const underMatch=s.match(/^([A-Za-z]{3})_(\d{4}|\d{2})$/);
+  if(underMatch){
+    const en=underMatch[1].toUpperCase();
+    const yr=underMatch[2].length===4?underMatch[2].slice(-2):underMatch[2];
+    const idx=MONTH_ABBR.indexOf(en);
+    if(idx>=0) return MONTH_ABBR_PT[idx]+'/'+yr;
+  }
+  return s; // retorna como está se não reconhecido
+}
+
+/* ═══════════ EXCEL PARSER ═══════════ */
+// Step real (actual/filled) columns — 0-indexed reference to planilha FUP - Status details
+// Note: steps 7 and 8 share column BA in the spreadsheet (merged milestone)
+const STEP_REAL_COLS={
+  1:'U', 2:'W', 3:'AB', 4:'AK', 5:'AR', 6:'AV',
+  7:'BA', 8:'BA', 9:'BF', 10:'BK', 11:'BP', 12:'BU',
+  13:'BZ', 14:'CG', 15:'CJ', 16:'CO', 17:'CT', 18:'CY',
+  19:'DD', 20:'DI', 21:'DO'
+};
+// Colunas de rótulo (row 7 da planilha) — onde está o nome de cada etapa.
+// Steps 4 e 5 têm header em coluna diferente da data real (merged cells).
+// Steps 6-21 não informados: usa-se STEP_REAL_COLS como fallback.
+const STEP_LABEL_COLS={
+  1:'U',  2:'W',  3:'AB', 4:'AG', 5:'AL',
+  6:'AV', 7:'BA', 8:'BA', 9:'BF', 10:'BK', 11:'BP', 12:'BU',
+  13:'BZ', 14:'CG', 15:'CJ', 16:'CO', 17:'CT', 18:'CY',
+  19:'DD', 20:'DI', 21:'DO'
+};
+let STEP_NAMES={}; // populado em parseExcel a partir da row 7 da planilha
+// ETA = Cargo Presence at PORT (col U = step 1)
+// ETE_DL = Estimated ETE deadline (col DN)
+// ETE_REAL = Actual delivery date (col DO = same as step 21)
+// DT = CC Days counter (col DT) — plain integer, NOT a date
+// Colunas ETE/CC: agora em COL_ETE_DL=118, COL_ETE_REAL=119, COL_CC_DAYS=124
+const COL_PRIO=1; // B: Priority flag — valor numérico em COL_ORDER (col C)
+
+
+/* ── CONSTANTES VERIFICADAS (v28) ────────────────────────────────────
+   Colunas 0-based para FUP - Status details
+   Verificado: 002B/2026=col4, Status=col7, Group=col6, Mode=col8
+─────────────────────────────────────────────────────────────────── */
+const COL_ORDER=2;   // C: Order of Priority (fonte primária da prioridade)
+const COL_MONTH=3;   // D: Month of Production
+const COL_PROC=4;    // E: Import Process ← ID do processo
+const COL_GROUP=6;   // G: Importer
+const COL_STATUS=7;  // H: Status Current Action
+const COL_MODE=8;    // I: Modal
+const COL_ETA=13;    // N: ETA
+const COL_ETE_DL=118;   // DO: ETE deadline
+const COL_ETE_REAL=119; // DP: ETE real
+const COL_CC_DAYS=124;  // DU: CC Days real
+const COL_NOTES=127;    // DX: Observações
+const COL_CTNR=5;       // F: Nr of CTNR
+const COL_ANALYST=141;  // EL: Process Analyst
+const COL_STORAGE=132;  // EC: Storage/Unstuffing value
+const COL_PAY_STOR=133; // ED: Date Payment Storage
+const COL_DEMURR=134;   // EE: Demurrage value
+const COL_PAY_DEMURR=135; // EF: Date Payment Demurrage
+const COL_PENALTIES=136;  // EG: Penalties value
+const COL_PAY_PEN=137;  // EH: Date Payment Penalties
+const COL_FREETIME=138; // EI: Due date free time
+const COL_DEV=139;      // EJ: Container Devolution
+const PRE_COLS=[14,15,16,17,18,19,20]; // O-U: Pré-embarque
+
+// Step real (data real preenchida) — índice 0-based
+const STEP_REAL={
+  1:21, 2:23, 3:28, 4:33, 5:38, 6:43, 7:48, 8:53,
+  9:58, 10:63, 11:68, 12:73, 13:78, 14:83, 15:88,
+  16:93, 17:98, '17b':103, 18:108, 19:113, 20:119
+};
+// Step deadline (prazo) — índice 0-based
+const STEP_DL={
+  2:22, 3:27, 4:32, 5:37, 6:42, 7:47, 8:52, 9:57,
+  10:62, 11:67, 12:72, 13:77, 14:82, 15:87, 16:92,
+  17:97, '17b':102, 18:107, 19:112, 20:118
+};
+// Step delay (dias de atraso)
+const STEP_DELAY={
+  2:26, 3:31, 4:36, 5:41, 6:46, 7:51, 8:56, 9:61,
+  10:66, 11:71, 12:76, 13:81, 14:86, 15:91, 16:96,
+  17:101, '17b':106, 18:111, 19:116, 20:122
+};
+const STEP_ORDER=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,'17b',18,19,20];
+
+/* ── Responsável padrão por etapa (fallback para row 6 da planilha) ─── */
+const STEP_RESP_DEFAULT={
+  1:'Porto',2:'COMEX',3:'COMEX',4:'Aduana',
+  5:'COMEX',6:'Fiscal',7:'COMEX',8:'Financeiro',9:'COMEX',
+  10:'COMEX',11:'Fiscal',12:'SEFAZ / Aduana',
+  13:'COMEX',14:'Fiscal',15:'COMEX',16:'Fiscal',
+  17:'COMEX','17b':'COMEX',18:'SEFAZ / Aduana',19:'COMEX',20:'Transportador'
+};
+let STEP_RESP={}; // populado no parseExcel com row 6 da planilha
+
+const STEP_NAMES_PT={
+  1:'Presença de Carga no Porto',
+  2:'Autorização DUIMP',
+  3:'Registro DUIMP',
+  4:'Desembaraço Aduaneiro (DUIMP)',
+  5:'Solicitar Pós-Registro (Fiscal)',
+  6:'Receber Pós-Registro',
+  7:'Receber ICMS (se aplicável)',
+  8:'Pagamento ICMS (se aplicável)',
+  9:'Enviar Comprovante ICMS',
+  10:'Solicitar Declaração ICMS (Fiscal)',
+  11:'Receber Declaração ICMS',
+  12:'Receber GLME (se aplicável)',
+  13:'Solicitar POST CESUT (Fiscal)',
+  14:'Receber POST CESUT',
+  15:'Solicitar Nota Fiscal (Fiscal)',
+  16:'Receber Nota Fiscal',
+  17:'Enviar NF ao Despachante',
+  '17b':'Despachante → SEFAZ',
+  18:'Aprovação NF (SEFAZ)',
+  19:'Agendamento de Transporte',
+  20:'Chegada na Eletra (ETE)'
+};
+const PRE_NAMES_PT=[
+  'Emissão Embarque(TXT)','Solicitar Custos','Receber Custos',
+  'Solicitar Pré-Reg.','Receber Pré-Reg.','Recursos(Fiona)','Confirmar Recursos'
+];
+
+function parseExcel(wb){
+  const sheetName=
+    wb.SheetNames.find(n=>n==='FUP - Status details')
+    ||wb.SheetNames.find(n=>!n.includes('(')&&n.toLowerCase().includes('fup'))
+    ||wb.SheetNames[0];
+  const ws=wb.Sheets[sheetName];
+  if(!ws) return {procs:[],log:['❌ Aba não encontrada: '+sheetName]};
+  const log=['📋 Aba: "'+sheetName+'"'];
+  const data=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  log.push('📐 '+data.length+' linhas');
+
+  // Converter serial Excel → DD/MM/YYYY
+  function xd(v){
+    if(!v&&v!==0) return '';
+    if(typeof v==='number'&&v>40000&&v<60000){
+      const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);
+      return [String(d.getUTCDate()).padStart(2,'0'),String(d.getUTCMonth()+1).padStart(2,'0'),d.getUTCFullYear()].join('/');
+    }
+    if(typeof v==='string'&&/^\d{2}\/\d{2}\/\d{4}$/.test(v.trim())) return v.trim();
+    return '';
+  }
+  function xn(v){ return typeof v==='number'&&v>0&&v<=9999?String(Math.round(v)):''; }
+  function xstr(v){ return String(v||'').trim(); }
+
+  // Detectar linha do header EN (tem "Import" E "Process" em alguma célula col 0-10)
+  let hdrRow=7;
+  for(let r=3;r<=12;r++){
+    const row=data[r]||[];
+    for(let c=0;c<=10;c++){
+      const v=xstr(row[c]).replace(/[\r\n]+/g,' ').toUpperCase();
+      if(v.includes('IMPORT')&&(v.includes('PROCESS')||v.includes('PROCESSO'))){
+        const nxt=xstr(data[r+1]?.[c]);
+        if(nxt&&/\d/.test(nxt)&&nxt.length<=30){ hdrRow=r; break; }
+      }
+    }
+    if(hdrRow!==7||r===12) break;
+  }
+  log.push('Header: linha '+(hdrRow+1)+' | Processo: col E ('+COL_PROC+')');
+
+  // Ler responsável por etapa da linha 6 (index 5) da planilha
+  // Responsáveis estão na coluna DL (deadline) de cada step; S1 usa coluna REAL
+  STEP_RESP={};
+  for(const s of STEP_ORDER){
+    const ri=STEP_REAL[s]; if(ri===undefined) continue;
+    const dlCol=STEP_DL[s];
+    const respCol=dlCol!==undefined?dlCol:ri; // DL col tem o responsável; S1 usa REAL
+    const raw=xstr(data[5]?.[respCol]); // row 6 = index 5
+    STEP_RESP[s]=raw||STEP_RESP_DEFAULT[s]||'COMEX';
+  }
+
+  // Nomes das etapas (PT tem prioridade)
+  STEP_NAMES={};
+  for(const s of STEP_ORDER){
+    const lc=STEP_DL[s]!==undefined?STEP_DL[s]:STEP_REAL[s];
+    if(lc===undefined) continue;
+    const raw=xstr(data[hdrRow]?.[lc]).replace(/[\r\n]+/g,' ');
+    STEP_NAMES[s]=STEP_NAMES_PT[s]||(raw||('S'+s));
+  }
+
+  const procs=[];
+  let grp='ELETRA';
+
+  for(let r=hdrRow+1;r<Math.min(data.length,170);r++){
+    const row=data[r]||[];
+    const bVal=xstr(row[COL_PRIO]).toUpperCase();
+    if(bVal.startsWith('SUBTOTAL')) continue; // pula subtotais, continua lendo
+    if(bVal==='LIVOLTEK'){grp='LIVOLTEK';continue;}
+
+    // Processo: col E, deve ter dígito e comprimento razoável
+    const pname=xstr(row[COL_PROC]);
+    if(!pname||pname.length<4||pname.length>30) continue;
+    if(!(/\d/.test(pname))) continue;
+    // Rejeitar valores numéricos simples (ex: "1", "0.5", "100")
+    if(/^\d+(\.\d+)?$/.test(pname)) continue;
+    // Deve conter "/" OU mistura de letras e dígitos
+    if(!pname.includes('/')&&!(/[A-Za-z]/.test(pname)&&/\d/.test(pname))) continue;
+
+    // Prioridade: col C (Order of Priority) é a fonte primária
+    const orderN=parseInt(xstr(row[COL_ORDER]));
+    let prio=3;
+    if(orderN>=1&&orderN<=5) prio=orderN;
+    else if(/^P/i.test(xstr(row[COL_PRIO]))) prio=1;
+
+    // Datas das etapas
+    const stepReal={},stepDl={},stepDelay={};
+    let lastFilled=0, lastFilledKey=0;
+    for(const s of STEP_ORDER){
+      const ri=STEP_REAL[s]; if(ri===undefined) continue;
+      const rd=xd(row[ri]);
+      if(rd){
+        stepReal[s]=rd;
+        lastFilled=typeof s==='number'?s:17.5;
+        lastFilledKey=s;
+      }
+      const di=STEP_DL[s]; if(di!==undefined){ const dd=xd(row[di]); if(dd) stepDl[s]=dd; }
+      const dly=STEP_DELAY[s]; if(dly!==undefined){ const d=xn(row[dly]); if(d) stepDelay[s]=d; }
+    }
+    const lIdx=STEP_ORDER.indexOf(lastFilledKey);
+    const curStep=lastFilledKey===0?0:(typeof lastFilledKey==='number'?lastFilledKey:17);
+    const nxtStep=lastFilledKey===0?STEP_ORDER[0]:
+      (lIdx<STEP_ORDER.length-1?STEP_ORDER[lIdx+1]:STEP_ORDER[STEP_ORDER.length-1]);
+
+    // Pré-embarque
+    const preClear=PRE_COLS.map((ci,i)=>({name:(PRE_NAMES_PT||[])[i]||'Pre-'+i,date:xd(row[ci])}));
+
+    const statusRaw=xstr(row[COL_STATUS]);
+    const modeRaw  =xstr(row[COL_MODE]);
+    const monthRaw =xstr(row[COL_MONTH]);
+    const eta      =xd(row[COL_ETA]);
+    const ete_dl   =xd(row[COL_ETE_DL]);
+    const ete_real =xd(row[COL_ETE_REAL]);
+    const cc_days  =xn(row[COL_CC_DAYS]);
+    const obs      =xstr(row[COL_NOTES]);
+
+    log.push('✓ ['+grp+'] '+pname+' | P'+prio+' | step='+curStep+'→'+nxtStep+' | '+statusRaw.slice(0,12));
+
+    procs.push({
+      id:pname, prio, group:grp,
+      month:parseMonth(monthRaw),
+      eta, ete_dl, ete_real, cc_days, obs,
+      resp:'COMEX', du:'',
+      status:inferStatus(statusRaw,curStep),
+      eta_period:(()=>{ const v=row[COL_ETA]; if(typeof v==='number'&&v>40000){const d=new Date(Date.UTC(1899,11,30)+Math.round(v)*86400000);return String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear();} if(typeof v==='string'&&v.includes('/')){const p=v.split('/');if(p.length===3)return p[1].padStart(2,'0')+'/'+p[2];} return ''; })(),
+      mode:inferMode(modeRaw),
+      step:curStep, nextStep:nxtStep,
+      stepReal, stepDl, stepDelay, preClear,
+      // Novos campos
+      ctnr:xstr(row[COL_CTNR]),
+      analyst:xstr(row[COL_ANALYST]),
+      storage_val:xstr(row[COL_STORAGE]),
+      pay_storage:xd(row[COL_PAY_STOR]),
+      demurrage_val:xstr(row[COL_DEMURR]),
+      pay_demurrage:xd(row[COL_PAY_DEMURR]),
+      penalties_val:xstr(row[COL_PENALTIES]),
+      pay_penalties:xd(row[COL_PAY_PEN]),
+      free_time:xd(row[COL_FREETIME]),
+      devolution:xd(row[COL_DEV])
+    });
+  }
+
+  if(!procs.length) log.push('⚠️ Nenhum processo encontrado.');
+  else log.push('✅ '+procs.length+' processos carregados.');
+  return{procs,log,sheet:sheetName};
+}
+
+function inferStatus(raw,step){
+  if(raw){const s=String(raw).toUpperCase();
+    if(s.includes('DELIVERED')||s.includes('ENTREGUE')) return 'DELIVERED';
+    if(s.includes('CUSTOMS CLEARANCE')||s.includes('CUSTOMS')||s.includes('DESEMBAR')) return 'CUSTOMS';
+    if(s.includes('WAITING SHIPMENT')||s.includes('WAITING EMBARQUE')) return 'SHIPMENT';
+    if(s.includes('TRANSIT')||s.includes('TRÂNSITO')) return 'TRANSIT';
+    if(s.includes('WAITING')||s.includes('CHEGADA')||s.includes('ARRIVAL')) return 'WAITING';
+  }
+  if(step===0) return 'WAITING';
+  if(step<=3) return 'TRANSIT';
+  if(step<=19) return 'CUSTOMS';
+  if(step===20) return 'DELIVERED';
+  return 'WAITING';
+}
+function inferMode(raw){
+  if(!raw) return 'SEA';
+  const m=String(raw).toUpperCase();
+  if(m.includes('AIR')||m.includes('AÉRE')||m.includes('空')) return 'AIR';
+  if(m.includes('ROAD')||m.includes('ROD')||m.includes('陆')) return 'ROAD';
+  return 'SEA';
+}
+
+
+/* ═══════════ DETAIL PANEL ═══════════ */
+function closeDetail(){
+  document.getElementById('dpOverlay').classList.remove('open');
+  document.getElementById('dpPanel').classList.remove('open');
+}
+
+function showDetail(proc){
+  if(!proc) return;
+  const p=proc;
+  const lang=currentLang;
+  const todayStr=[String(today.getDate()).padStart(2,'0'),String(today.getMonth()+1).padStart(2,'0'),today.getFullYear()].join('/');
+  const t=TR[lang];
+
+  // Header
+  document.getElementById('dpId').textContent=p.id;
+  const ST_COLOR={WAITING:'background:#dbeafe;color:#1e40af',TRANSIT:'background:#fef9c3;color:#854d0e',
+    CUSTOMS:'background:#fce7f3;color:#9d174d',DELIVERED:'background:#d1fae5;color:#065f46',SHIPMENT:'background:#f3e8ff;color:#6b21a8'};
+  const stStyle=ST_COLOR[p.status]||'background:#f1f5f9;color:#374151';
+  const stLbl=t.statusLabels?.[p.status]||p.status;
+  const MODE_ICO={SEA:'🚢',AIR:'✈️',ROAD:'🚛'};
+  const modeLbl=(t.modeLabels?.[p.mode]||p.mode);
+  const grpBg=p.group==='LIVOLTEK'?'background:#fef3c7;color:#92400e':'background:#dbeafe;color:#1e40af';
+  const grpLbl=p.group==='LIVOLTEK'?'⚡ Livoltek':'🏭 Eletra';
+
+  document.getElementById('dpBadges').innerHTML=
+    `<span class="dp-badge" style="${stStyle}">${stLbl}</span>`+
+    `<span class="dp-badge">${MODE_ICO[p.mode]||'🚢'} ${modeLbl}</span>`+
+    `<span class="dp-badge" style="${grpBg}">${grpLbl}</span>`+
+    (p.prio?`<span class="dp-badge" style="background:${PRIO_COLORS[p.prio]||'#94a3b8'};color:#fff">P${p.prio}</span>`:'')+
+    (p.analyst?`<span class="dp-badge">👤 ${p.analyst}</span>`:'')+
+    (p.ctnr?`<span class="dp-badge">📦 ${p.ctnr} CTNR</span>`:'')+ 
+    (p.eta?`<span class="dp-badge">🚢 ETA: ${p.eta}</span>`:'')+ 
+    (p.eta_period?`<span class="dp-badge">📅 ${p.eta_period}</span>`:'');
+
+  // Body
+  let html='';
+
+  // Pre-clearance
+  if(p.preClear&&p.preClear.length){
+    html+=`<div class="dp-section"><div class="dp-sec-title">🔵 Pré-Embarque</div>`;
+    p.preClear.forEach((pc,i)=>{
+      const ok=!!pc.date;
+      html+=`<div class="pre-row"><div class="pre-ico ${ok?'ok':'no'}">${ok?'✓':'·'}</div>
+        <div class="pre-nm">${getPreName(i,lang)}</div>
+        <div class="pre-dt">${pc.date||'—'}</div></div>`;
+    });
+    html+=`</div>`;
+  }
+
+  // Financial info (storage/demurrage/penalties)
+  if(p.pay_storage||p.pay_demurrage||p.pay_penalties||p.storage_val||p.demurrage_val){
+    html+=`<div class="dp-section"><div class="dp-sec-title">💳 Pagamentos — Custos Portuários</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">`;
+    const renderFin=(lbl,val,date)=>`<div class="dp-extra">
+      <div class="dp-extra-lbl">${lbl}</div>
+      <div class="dp-extra-val">${val||'—'}</div>
+      ${date?`<div style="font-size:9px;color:var(--muted);margin-top:2px">Pago: ${date}</div>`:''}
+      </div>`;
+    html+=renderFin('Armazenagem',p.storage_val,p.pay_storage);
+    html+=renderFin('Demurrage',p.demurrage_val,p.pay_demurrage);
+    html+=renderFin('Multas',p.penalties_val,p.pay_penalties);
+    html+=`</div>`;
+    if(p.free_time||p.devolution){
+      html+=`<div style="display:flex;gap:8px;margin-top:8px">`;
+      if(p.free_time) html+=`<div class="dp-extra" style="flex:1"><div class="dp-extra-lbl">Free Time</div><div class="dp-extra-val">${p.free_time}</div></div>`;
+      if(p.devolution) html+=`<div class="dp-extra" style="flex:1"><div class="dp-extra-lbl">Dev. Container</div><div class="dp-extra-val">${p.devolution}</div></div>`;
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  }
+
+  // Step timeline
+  html+=`<div class="dp-section"><div class="dp-sec-title">📋 Etapas do Processo</div><div class="tl-wrap">`;
+  let curStepKey=null;
+  for(const s of STEP_ORDER){ if(!p.stepReal[s]){curStepKey=s;break;} }
+
+  for(const s of STEP_ORDER){
+    const sLabel=typeof s==='number'?('S'+s):'S17b';
+    const sName=getStepName(s,lang);
+    const realDate=p.stepReal[s]||'';
+    const dlDate=p.stepDl[s]||'';
+    const delayD=p.stepDelay[s]||'';
+    let dotCls,mainCls,dateHtml,skipHtml='';
+
+    if(realDate){
+      dotCls='done'; mainCls='';
+      const d=delayD?parseInt(delayD):0;
+      dateHtml=`<span class="tl-real done-cl">✓ ${realDate}</span>`;
+      if(dlDate) dateHtml+=` <span class="tl-dl">prazo: ${dlDate}</span>`;
+      if(delayD&&d!==0) dateHtml+=` <span class="tl-delay ${d>0?'late':'ok'}">${d>0?'+'+d+'d atraso':Math.abs(d)+'d adiantado'}</span>`;
+    } else if(s===curStepKey){
+      dotCls='cur'; mainCls='cur-nm';
+      dateHtml=`<span class="tl-real today-cl">📍 ${todayStr} (etapa atual)</span>`;
+      if(dlDate){
+        dateHtml+=` <span class="tl-dl">prazo: ${dlDate}</span>`;
+        const dlObj=fd(dlDate);if(dlObj&&dlObj<today) dateHtml+=` <span class="tl-delay late">⚠ atrasado</span>`;
+      }
+    } else if(!realDate&&curStepKey&&STEP_ORDER.indexOf(s)<STEP_ORDER.indexOf(curStepKey)){
+      dotCls='skip'; mainCls='skip-nm'; dateHtml=''; skipHtml=`<div class="tl-skip-lbl">Não aplicável (opcional)</div>`;
+    } else {
+      dotCls='fut'; mainCls='';
+      dateHtml=dlDate?`<span class="tl-real fut-cl">—</span><span class="tl-dl">prazo: ${dlDate}</span>`:`<span class="tl-real fut-cl">—</span>`;
+    }
+    html+=`<div class="tl-row${dotCls==='skip'?' skip-row':''}">
+      <div class="tl-dot ${dotCls}">${typeof s==='number'?s:'*'}</div>
+      <div class="tl-content">
+        <div class="tl-step-lbl">${sLabel} <span style="font-weight:400;color:#b0bdd0">${STEP_RESP[s]||''}</span></div>
+        <div class="tl-step-nm ${mainCls}">${sName}</div>
+        <div class="tl-dates">${dateHtml}</div>${skipHtml}
+      </div></div>`;
+  }
+  html+=`</div></div>`;
+  if(p.obs) html+=`<div class="dp-section"><div class="dp-sec-title">💬 Observações</div><div style="font-size:11px;color:var(--text2);line-height:1.5">${p.obs.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div></div>`;
+
+  document.getElementById('dpBody').innerHTML=html;
+
+  // Footer KPIs
+  const lateReal=p.ete_real&&fd(p.ete_real)<today&&p.status!=='DELIVERED';
+  const lateDl=p.ete_dl&&fd(p.ete_dl)<today&&p.status!=='DELIVERED';
+  document.getElementById('dpFooter').innerHTML=
+    `<div class="dp-kpi"><div class="dp-kpi-lbl">ETA Porto</div><div class="dp-kpi-val">${p.eta||'—'}</div></div>`+
+    `<div class="dp-kpi"><div class="dp-kpi-lbl">ETE Previsto</div><div class="dp-kpi-val" style="color:${lateDl?'#dc2626':'inherit'}">${p.ete_dl||'—'}</div></div>`+
+    `<div class="dp-kpi"><div class="dp-kpi-lbl">ETE Real</div><div class="dp-kpi-val" style="color:${p.status==='DELIVERED'?'#059669':lateReal?'#dc2626':'inherit'}">${p.ete_real||'—'}</div></div>`+
+    `<div class="dp-kpi"><div class="dp-kpi-lbl">CC Days (DU)</div><div class="dp-kpi-val">${p.cc_days||'—'}</div></div>`;
+
+  document.getElementById('dpOverlay').classList.add('open');
+  document.getElementById('dpPanel').classList.add('open');
+  document.getElementById('dpBody').scrollTop=0;
+}
+
+/* ═══════════ PERIOD FILTER ═══════════ */
+function buildEtaMonthOptions(){
+  if(!PROCS.length) return;
+
+  // ETA periods (MM/YYYY) — sorted chronologically
+  const etaPeriods=[...new Set(PROCS.map(p=>p.eta_period).filter(Boolean))];
+  etaPeriods.sort((a,b)=>{
+    const [ma,ya]=a.split('/'); const [mb,yb]=b.split('/');
+    return (+ya*12+ +ma)-(+yb*12+ +mb);
+  });
+  const etaDrop=document.getElementById('etaDrop');
+  if(etaDrop){
+    etaDrop.innerHTML='';
+    etaPeriods.forEach(p=>{
+      const lbl=document.createElement('label');
+      const inp=document.createElement('input');
+      inp.type='checkbox'; inp.value=p;
+      if(msEtaSel.includes(p)) inp.checked=true;
+      inp.onchange=()=>msChange('eta');
+      lbl.appendChild(inp); lbl.append(' '+p);
+      etaDrop.appendChild(lbl);
+    });
+    if(!etaPeriods.length) etaDrop.innerHTML='<div style="padding:8px 14px;font-size:10px;color:#94a3b8">Carregue a planilha primeiro</div>';
+  }
+
+  // Production months — sorted chronologically
+  const MONTH_NUM={JAN:1,FEV:2,MAR:3,ABR:4,MAI:5,JUN:6,JUL:7,AGO:8,SET:9,OUT:10,NOV:11,DEZ:12,
+    JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
+  function monthKey(m){
+    const parts=m.toUpperCase().split(/[_\/\s-]+/);
+    const yr=parseInt(parts[1]||parts[0]||'0');
+    const mn=MONTH_NUM[parts[0]?.slice(0,3)]||99;
+    return yr*100+mn;
+  }
+  const prodMonths=[...new Set(PROCS.map(p=>p.month).filter(Boolean))];
+  prodMonths.sort((a,b)=>monthKey(a)-monthKey(b));
+  const monthDrop=document.getElementById('monthDrop');
+  if(monthDrop){
+    monthDrop.innerHTML='';
+    prodMonths.forEach(m=>{
+      const lbl=document.createElement('label');
+      const inp=document.createElement('input');
+      inp.type='checkbox'; inp.value=m;
+      if(msMonthSel.includes(m)) inp.checked=true;
+      inp.onchange=()=>msChange('month');
+      lbl.appendChild(inp); lbl.append(' '+m);
+      monthDrop.appendChild(lbl);
+    });
+    if(!prodMonths.length) monthDrop.innerHTML='<div style="padding:8px 14px;font-size:10px;color:#94a3b8">Carregue a planilha primeiro</div>';
+  }
+}
+// Keep backwards compat
+function buildPeriodOptions(){ buildEtaMonthOptions(); }
+
+
+
+
+/* ═══════════ ADMIN AUTH ═══════════ */
+// Altere a senha abaixo — use hash SHA-256 para segurança adicional
+// Padrão: "eletra2026" — recomendado trocar antes de publicar
+const ADMIN_PWD = 'eletra2026';
+let _pendingAdminAction = null;
+
+function adminAction(action){
+  // If already authenticated in this session, proceed directly
+  if(sessionStorage.getItem('_adminOk')==='1'){
+    _execAdminAction(action); return;
+  }
+  _pendingAdminAction = action;
+  const desc = action==='update'
+    ? 'Atualizar planilha carregando novo arquivo Excel.'
+    : 'Salvar versão publicada com dados embutidos.';
+  document.getElementById('adminActionDesc').textContent = desc;
+  document.getElementById('adminPwdInput').value = '';
+  document.getElementById('adminErr').style.display = 'none';
+  const ov = document.getElementById('adminOverlay');
+  ov.style.display = 'flex';
+  setTimeout(()=>document.getElementById('adminPwdInput').focus(), 80);
+}
+
+function confirmAdmin(){
+  const pwd = document.getElementById('adminPwdInput').value;
+  if(pwd === ADMIN_PWD){
+    sessionStorage.setItem('_adminOk','1');
+    closeAdmin();
+    if(_pendingAdminAction){ _execAdminAction(_pendingAdminAction); _pendingAdminAction=null; }
+  } else {
+    document.getElementById('adminErr').style.display = 'block';
+    document.getElementById('adminPwdInput').value = '';
+    document.getElementById('adminPwdInput').focus();
+  }
+}
+
+function closeAdmin(){
+  document.getElementById('adminOverlay').style.display = 'none';
+  _pendingAdminAction = null;
+}
+
+function _execAdminAction(action){
+  if(action==='update') togglePanel();
+  else if(action==='snapshot') saveSnapshot();
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeAdmin(); });
+
+
+/* ═══════════ SNAPSHOT / SAVE WITH DATA ═══════════ */
+function saveSnapshot(){
+  if(!PROCS.length){ alert('Carregue a planilha primeiro.'); return; }
+  
+  const snapBtn=document.getElementById('snapBtn');
+  if(snapBtn){ snapBtn.textContent='⏳ Gerando...'; snapBtn.disabled=true; }
+  
+  // Try to get the current page HTML via fetch (works on http, not file://)
+  const tryFetch=()=>{
+    return fetch(location.href)
+      .then(r=>r.text())
+      .then(html=>embedAndDownload(html))
+      .catch(()=>{
+        // Fallback for file:// — use outerHTML
+        embedAndDownload(document.documentElement.outerHTML);
+      });
+  };
+  
+  function embedAndDownload(html){
+    const rawJson=JSON.stringify(PROCS).split('</scr'+'ipt>').join('<\/script>'); const dataScript='\n<scr'+'ipt>\nwindow.__SNAPSHOT_PROCS__='+rawJson+';\nwindow.__SNAPSHOT_TIME__=\''+encodeURIComponent(lastUpTime||new Date().toLocaleString('pt-BR'))+'\';\n</scr'+'ipt>';
+    // Replace the placeholder comment with actual data
+    // Remove previous snapshot data if re-saving from a snapshot
+    let snapshot=html.replace(/<script>\s*window\.__SNAPSHOT_PROCS__=[\s\S]*?<\/script>/,'<!-- __SNAPSHOT_DATA__ -->');
+    // Now replace the placeholder (original or just restored above)
+    if(snapshot.includes('<!-- __SNAPSHOT_DATA__ -->')){
+      snapshot=snapshot.replace('<!-- __SNAPSHOT_DATA__ -->', dataScript);
+    } else {
+      // Last resort: insert before </body>
+      snapshot=html.replace('</body>', dataScript+'\n</body>');
+    }
+    const date=new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const fname=`FUP_Dashboard_${date}.html`;
+    const blob=new Blob([snapshot],{type:'text/html;charset=utf-8'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=fname;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+    if(snapBtn){ snapBtn.innerHTML='💾 <span id="saveBtnTxt">Salvar</span>'; snapBtn.disabled=false; }
+    // Show info about what to do next
+    const info=`✅ Dashboard salvo como "${fname}"\n\nPara publicar sem necessidade de upload:\n1. Renomeie para "index.html"\n2. Substitua no repositório GitHub\n3. Aguarde o GitHub Pages atualizar (~2 min)\n4. Qualquer pessoa que abrir o link verá os dados carregados automaticamente!`;
+    setTimeout(()=>alert(info),300);
+  }
+  
+  tryFetch();
+}
+
+/* ═══════════ FILE UPLOAD ═══════════ */
+function handleUpload(evt){ const f=evt.target.files[0]; if(f) processFile(f,'Upload'); }
+function processFile(file,src){
+  const log=document.getElementById('ulog'+src);
+  log.className='ulog show';
+  log.innerHTML='<span class="log-info">📖 Lendo: '+file.name+'...</span>';
+  if(!window.XLSX){ log.innerHTML+='<br><span class="log-err">❌ SheetJS não carregado. Verifique conexão.</span>'; return; }
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:false,raw:false});
+      const res=parseExcel(wb);
+      res.log.forEach(l=>{ log.innerHTML+='<br>'+l; });
+      if(res.procs.length){
+        PROCS=res.procs; lastUpTime=new Date().toLocaleString('pt-BR');
+        const t=TR[currentLang];
+        setText('lastUpTxt',t.lastUp(lastUpTime));
+        setText('lastUpdateBar','🕐 '+t.lastUp(lastUpTime)+' · Aba: '+res.sheet);
+        setConnStatus('ok',t.connOk);
+        render();
+        log.innerHTML+='<br><span class="log-ok">✅ Dashboard atualizado com '+res.procs.length+' processos!</span>';
+        // Show publish button in log
+        log.innerHTML+=`<br><div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:11px">
+          <div style="font-weight:700;color:#065f46;margin-bottom:4px">📢 Publicar no GitHub Pages</div>
+          <div style="color:#374151;margin-bottom:8px">Para que qualquer pessoa veja os dados sem precisar fazer upload, salve este HTML com os dados embutidos e publique no repositório.</div>
+          <button onclick="saveSnapshot()" style="background:#059669;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer">💾 Salvar HTML com Dados para Publicar</button>
+        </div>`;
+        // Don't auto-close so user can see the publish button
+        // setTimeout(()=>togglePanel(true),2200);
+      }
+    }catch(err){ log.innerHTML+='<br><span class="log-err">❌ Erro: '+err.message+'</span>'; }
+  };
+  reader.onerror=()=>{ log.innerHTML+='<br><span class="log-err">❌ Erro ao ler arquivo.</span>'; };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ═══════════ SHAREPOINT FETCH ═══════════ */
+async function fetchSP(){
+  const url=document.getElementById('spUrl').value.trim();
+  const log=document.getElementById('ulogOnline');
+  log.className='ulog show';
+  if(!url){ log.innerHTML='<span class="log-err">❌ Insira a URL.</span>'; return; }
+  let dlUrl=url;
+  if(url.includes('sharepoint.com')&&!url.includes('download=1')) dlUrl=url+'&download=1';
+  log.innerHTML='<span class="log-info">🌐 Buscando arquivo...</span>';
+  const btn=document.getElementById('spBtn'); btn.disabled=true;
+  try{
+    const resp=await fetch(dlUrl,{credentials:'include',mode:'cors'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status+': '+resp.statusText);
+    const ab=await resp.arrayBuffer();
+    log.innerHTML+='<br><span class="log-info">📖 Recebido ('+Math.round(ab.byteLength/1024)+' KB). Processando...</span>';
+    const wb=XLSX.read(new Uint8Array(ab),{type:'array',cellDates:false,raw:false});
+    const res=parseExcel(wb);
+    res.log.forEach(l=>{ log.innerHTML+='<br>'+l; });
+    if(res.procs.length){
+      PROCS=res.procs; lastUpTime=new Date().toLocaleString('pt-BR');
+      setText('lastUpTxt',TR[currentLang].lastUp(lastUpTime));
+      setConnStatus('ok',TR[currentLang].connOk);
+      render();
+      log.innerHTML+='<br><span class="log-ok">✅ Atualizado!</span>';
+      setTimeout(()=>togglePanel(true),2200);
+    }
+  }catch(err){
+    log.innerHTML+='<br><span class="log-err">❌ '+err.message+'</span>';
+    log.innerHTML+='<br><span class="log-info">💡 Use Upload Manual se o acesso direto falhar.</span>';
+  }finally{ btn.disabled=false; }
+}
+function setConnStatus(state,txt){ const el=document.getElementById('connPill'); el.className='conn-pill '+state; setText('connTxt',txt); }
+
+/* ═══════════ GOOGLE SHEETS FETCH + AUTO-REFRESH ═══════════ */
+let gsTimer=null, gsCountTimer=null, gsNextTick=0;
+
+// GSheets disabled
+
+function setAutoRefresh(){
+  const min=parseInt(document.getElementById('gsInterval').value);
+  const badge=document.getElementById('gsRefreshBadge');
+  const cntEl=document.getElementById('gsCountdown');
+  const t=TR[currentLang];
+
+  // Clear previous timers
+  if(gsTimer){ clearInterval(gsTimer); gsTimer=null; }
+  if(gsCountTimer){ clearInterval(gsCountTimer); gsCountTimer=null; }
+  cntEl.textContent='';
+
+  if(min===0){
+    badge.className='gs-refresh-badge off';
+    badge.textContent=t.gsRefreshOff;
+    return;
+  }
+
+  badge.className='gs-refresh-badge';
+  badge.textContent=t.gsRefreshOn(min);
+  gsNextTick=Date.now()+min*60000;
+
+  // Countdown display
+  gsCountTimer=setInterval(()=>{
+    const rem=Math.max(0,Math.round((gsNextTick-Date.now())/1000));
+    const m=Math.floor(rem/60), s=rem%60;
+    cntEl.textContent=`Próxima atualização: ${m}:${String(s).padStart(2,'0')}`;
+  },1000);
+
+  // Auto-refresh: silent fetch
+  gsTimer=setInterval(()=>{
+    gsNextTick=Date.now()+min*60000;
+    fetchGSheets(true);
+  },min*60000);
+}
+
+/* ═══════════ DRAG & DROP ═══════════ */
+/* ═══════════ DEFAULT GOOGLE SHEETS SOURCE ═══════════ */
+const DEFAULT_GS_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vQS840ialSMTZV0ooZl9mR1YnkIPOfSzoe72g9iTLjTqWP0i6mzZPAjbzfF1AOTr9JxvAHBz0JeWXS2/pub?gid=0&single=true&output=csv';
+
+/* ─── Placeholder helpers ─── */
+function setPlaceholder(ico,title,body){
+  const el=document.getElementById('phIco'); if(el) el.textContent=ico;
+  const h =document.getElementById('phH2');  if(h)  h.textContent=title;
+  const p =document.getElementById('phP');   if(p)  p.innerHTML=body;
+}
+
+/* ─── Core CSV loader — does NOT touch panel UI ─── */
+async function autoLoadGSheets(){
+  setPlaceholder('⏳','Carregando dados...','Faça upload da planilha COMEX - FUP Processes - UPDATE online.xlsx');
+  try{
+    const resp=await fetch(DEFAULT_GS_URL,{mode:'cors'});
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const csv=await resp.text();
+    if(!csv||csv.length<50) throw new Error('CSV vazio ('+csv.length+' bytes)');
+
+    const wb=XLSX.read(csv,{type:'string',cellDates:false,raw:false});
+    // CSV always has one sheet; alias it so parseExcel finds it
+    if(wb.SheetNames[0]!=='FUP - Status details'){
+      wb.Sheets['FUP - Status details']=wb.Sheets[wb.SheetNames[0]];
+      wb.SheetNames.push('FUP - Status details');
+    }
+    const res=parseExcel(wb);
+    if(res.procs.length){
+      PROCS=res.procs; lastUpTime=new Date().toLocaleString('pt-BR');
+      const t=TR[currentLang];
+      setText('lastUpTxt',t.lastUp(lastUpTime));
+      setText('lastUpdateBar','🕐 '+t.lastUp(lastUpTime)+' · Google Sheets (auto)');
+      setConnStatus('ok',t.connOk);
+      render();
+      // Pre-fill the GS tab field so manual refresh works
+      const inp=document.getElementById('gsUrl'); if(inp) inp.value=DEFAULT_GS_URL;
+    } else {
+      setPlaceholder('⚠️','Aba não encontrada',
+        'O CSV foi recebido mas nenhum processo foi encontrado.<br>'
+        +'<small>Verifique se o GID na URL aponta para a aba <strong>FUP - Status details</strong>.</small>');
+    }
+  }catch(e){
+    setPlaceholder('⚠️','Não foi possível carregar',
+      'Falha ao buscar dados do Google Sheets.<br>'
+      +'<small style="color:#dc2626">'+e.message+'</small><br><br>'
+      +'<small>Certifique-se de que a planilha está publicada:<br>'
+      +'<em>Arquivo → Publicar na Web → Aba correta → CSV</em></small>');
+    // Also pre-fill GS tab so user can retry manually
+    const inp=document.getElementById('gsUrl'); if(inp) inp.value=DEFAULT_GS_URL;
+  }
+}
+
+let currentUser={user:'admin',role:'admin',name:'Admin',expires:Date.now()+99*3600*1000};
+function checkAuth(){ return true; } // auth delegated to adminAction
+document.addEventListener('DOMContentLoaded',()=>{
+  // Auto-load snapshot data if pre-embedded (published version)
+  if(window.__SNAPSHOT_PROCS__&&window.__SNAPSHOT_PROCS__.length){
+    PROCS=window.__SNAPSHOT_PROCS__;
+    try{lastUpTime=decodeURIComponent(window.__SNAPSHOT_TIME__)||new Date().toLocaleString('pt-BR');}catch(e){lastUpTime=window.__SNAPSHOT_TIME__||'';}  
+    const ph=document.getElementById('phState');
+    const dc=document.getElementById('dashContent');
+    if(ph) ph.style.display='none';
+    if(dc) dc.style.display='block';
+    const sb=document.getElementById('snapBtn');if(sb)sb.style.display='';
+    setTimeout(()=>{
+      try{
+        setLang('pt');
+        buildEtaMonthOptions();
+        buildStatusChart();buildEtaList();buildPrioBars();updateKPIs();applyFilters();
+        updateLastUpBar();
+        // Banner informativo (só uma vez)
+        if(!document.querySelector('.snap-banner')){
+          const bn=document.getElementById('lastUpdateBar');
+          if(bn) bn.insertAdjacentHTML('afterend',
+            '<div class="snap-banner">📸 Dados de '+lastUpTime+
+            ' · <a onclick="togglePanel()" href="#" style="color:#6ee7b7;font-weight:700">Clique para atualizar</a></div>');
+        }
+      }catch(err){ console.error('Snapshot load error:',err); }
+    },150);
+    return;
+  } setLang('pt');
+  const zone=document.getElementById('dropZone');
+  zone.addEventListener('dragover',e=>{ e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
+  zone.addEventListener('drop',e=>{ e.preventDefault(); zone.classList.remove('over'); const f=e.dataTransfer.files[0]; if(f) processFile(f,'Upload'); });
+  updateSelectOptions(TR['pt']);
+  // Upload manual apenas — aguardar SheetJS mas não auto-carregar dados
+  let n=0;
+  const t=setInterval(()=>{
+    n++;
+    if(window.XLSX){ clearInterval(t); }
+    else if(n>20){ clearInterval(t); }
+  },500);
+});
+
+/* ═══════════ RENDER ═══════════ */
+const STATUS_COLORS={WAITING:'#6b7280',TRANSIT:'#f59e0b',CUSTOMS:'#ec4899',DELIVERED:'#059669'};
+
+/* ── Multi-language step names ──────────────────────────────────────── */
+const STEP_NAMES_EN={
+  1:'Cargo Presence at Port',
+  2:'DUIMP Authorization',
+  3:'DUIMP Registration',
+  4:'Customs Clearance (DUIMP)',
+  5:'Request POST Registration (Tax)',
+  6:'Receive POST Registration',
+  7:'Receive ICMS (if req.)',
+  8:'ICMS Tax Payment (if req.)',
+  9:'Send ICMS Receipt',
+  10:'Request ICMS Declaration (Tax)',
+  11:'Receive ICMS Declaration',
+  12:'Receive GLME (if req.)',
+  13:'Request POST CESUT (Tax)',
+  14:'Receive POST CESUT',
+  15:'Request Invoice / NF (Tax)',
+  16:'Receive Invoice / NF',
+  17:'Send NF to Customs Broker',
+  '17b':'Broker NF to SEFAZ',
+  18:'NF Approval (SEFAZ)',
+  19:'Transport Scheduling',
+  20:'Arrival at Eletra (ETE)'
+};
+const STEP_NAMES_ZH={
+  1:'货物到港确认',
+  2:'DUIMP授权',
+  3:'DUIMP注册',
+  4:'DUIMP海关清关',
+  5:'申请后注册(税务)',
+  6:'收到后注册确认',
+  7:'收到ICMS税单(如需)',
+  8:'ICMS纳税(如需)',
+  9:'发送ICMS收据',
+  10:'申请ICMS声明(税务)',
+  11:'收到ICMS声明',
+  12:'收到GLME(如需)',
+  13:'申请POST CESUT(税务)',
+  14:'收到POST CESUT',
+  15:'申请发票NF(税务)',
+  16:'收到发票NF',
+  17:'向报关行发送NF',
+  '17b':'报关行发送NF至SEFAZ',
+  18:'NF审批(SEFAZ)',
+  19:'运输安排',
+  20:'到达Eletra工厂(ETE)'
+};
+const PRE_NAMES_EN=['Issue Shipment (TXT)','Request Cost Estimate','Receive Cost Estimate','Request Pre-Registration','Receive Pre-Registration','Resources (Fiona)','Confirm Resources'];
+const PRE_NAMES_ZH=['签发装运单','申请费用估算','收到费用估算','申请预注册','收到预注册','资源申请','确认资源'];
+
+function getStepName(s,lang){
+  const map=lang==='en'?STEP_NAMES_EN:lang==='zh'?STEP_NAMES_ZH:STEP_NAMES_PT;
+  return map[s]||STEP_NAMES_PT[s]||STEP_NAMES[s]||('S'+s);
+}
+function getPreName(i,lang){
+  const map=lang==='en'?PRE_NAMES_EN:lang==='zh'?PRE_NAMES_ZH:PRE_NAMES_PT;
+  return map[i]||PRE_NAMES_PT[i]||('Pre-'+i);
+}
+
+const PRIO_COLORS={1:'#dc2626',2:'#ea6c1a',3:'#f59e0b',4:'#3b82f6',5:'#6b7280'};
+const STATUS_BADGE={WAITING:'b-waiting',TRANSIT:'b-transit',CUSTOMS:'b-customs',DELIVERED:'b-delivered',SHIPMENT:'b-pending'};
+
+function render(){
+  document.getElementById('phState').style.display='none';
+  document.getElementById('dashContent').style.display='block';
+  updateKPIs();
+  buildStatusChart();
+  buildPrioBars();
+  buildEtaList();
+  applyFilters();
+}
+
+function fd(s){ if(!s) return null; const p=s.split('/'); if(p.length===3) return new Date(+p[2],+p[1]-1,+p[0]); return null; }
+const today=new Date(); today.setHours(0,0,0,0);
+
+function updateKPIs(){
+  const t=PROCS.length;
+  const delivered=PROCS.filter(p=>p.status==='DELIVERED').length;
+  const active=PROCS.filter(p=>p.status!=='DELIVERED').length;
+  const waiting=PROCS.filter(p=>p.status==='WAITING').length;
+  const shipment=PROCS.filter(p=>p.status==='SHIPMENT').length;
+  const customs=PROCS.filter(p=>p.status==='CUSTOMS').length;
+  const late=PROCS.filter(p=>{const d=fd(p.ete_dl);return d&&d<today&&p.status!=='DELIVERED';}).length;
+  const p1=PROCS.filter(p=>p.prio===1).length;
+  setText('kTotal',t); setText('kAtivos',active); setText('kAguard',waiting);
+  if(document.getElementById('kShipment')) setText('kShipment',shipment);
+  setText('kCustoms',customs); setText('kDelivered',delivered); setText('kLate',late); setText('kP1',p1);
+}
+
+function buildStatusChart(){
+  // Pool: respeita todos os filtros ativos
+  const pool=getActiveProcs();
+  const isFiltered=!!(kpiFilter||statusFilter||prioBarFilter||activeGroupFilter||
+    (document.getElementById('statusSel')?.value)||
+    msPrioSel.length||
+    (document.getElementById('modeSel')?.value));
+
+  const counts={};
+  pool.forEach(p=>{ counts[p.status]=(counts[p.status]||0)+1; });
+  const order=['DELIVERED','CUSTOMS','TRANSIT','WAITING','SHIPMENT'];
+  const labels=[],data=[],colors=[],colorsAlpha=[];
+
+  const STATUS_COLORS_RICH={
+    WAITING:'#6b7280', TRANSIT:'#f59e0b', CUSTOMS:'#ec4899',
+    DELIVERED:'#059669', SHIPMENT:'#7c3aed'
+  };
+
+  // Detecta status selecionado (para destacar no donut)
+  const stSel=document.getElementById('statusSel')?.value||'';
+  const activeStatus=statusFilter||(kpiFilter==='customs_all'?'CUSTOMS':null)||
+    (kpiFilter==='active'?'__ACTIVE__':null)||(stSel&&!kpiFilter?stSel:null);
+
+  order.forEach(s=>{
+    if(counts[s]){
+      const isSelected=!activeStatus||activeStatus===s||(activeStatus==='__ACTIVE__'&&s!=='DELIVERED');
+      labels.push(TR[currentLang].statusLabels[s]||s);
+      data.push(counts[s]);
+      colors.push(STATUS_COLORS_RICH[s]||'#94a3b8');
+      colorsAlpha.push((STATUS_COLORS_RICH[s]||'#94a3b8')+(isSelected?'ee':'44'));
+    }
+  });
+
+  const dispN=pool.length;
+  setText('donutPill',(isFiltered?dispN+' / ':'')+PROCS.length+' total');
+
+  const ctx=document.getElementById('chartStatus').getContext('2d');
+  if(chartStatusObj){ chartStatusObj.destroy(); chartStatusObj=null; }
+
+  const centerPlugin={id:'center',beforeDraw(chart){
+    const {ctx:c,chartArea:{top,left,width,height}}=chart;
+    const cx=left+width/2,cy=top+height/2;
+    c.save(); c.textAlign='center'; c.textBaseline='middle';
+    c.beginPath(); c.arc(cx,cy,36,0,Math.PI*2);
+    c.fillStyle='rgba(26,39,66,.04)'; c.fill();
+    c.font="700 24px 'IBM Plex Mono',monospace"; c.fillStyle='#1a2742';
+    c.fillText(dispN,cx,cy-9);
+    c.font="600 9px 'IBM Plex Sans',sans-serif"; c.fillStyle='#7a90b8';
+    c.fillText(isFiltered?'FILTRADO':'TOTAL',cx,cy+10); c.restore();
+  }};
+
+  chartStatusObj=new Chart(ctx,{
+    type:'doughnut', plugins:[centerPlugin],
+    data:{labels,datasets:[{data,backgroundColor:colorsAlpha,borderColor:colors,
+      borderWidth:2.5,hoverBorderWidth:3.5,hoverOffset:8,borderRadius:3}]},
+    options:{
+      responsive:true,maintainAspectRatio:true,cutout:'62%',
+      layout:{padding:4},
+      animation:{animateRotate:true,animateScale:false,duration:400},
+      plugins:{
+        legend:{position:'bottom',labels:{padding:10,boxWidth:10,boxHeight:10,
+          font:{size:10,weight:'600'},color:'#3d537a',
+          generateLabels(chart){
+            const ds=chart.data.datasets[0];
+            return chart.data.labels.map((lbl,i)=>{
+              const val=ds.data[i];
+              const pct=Math.round(val/PROCS.length*100);
+              return{text:`${lbl}  ${val} (${pct}%)`,
+                fillStyle:ds.backgroundColor[i],strokeStyle:ds.borderColor[i],
+                lineWidth:1.5,hidden:false,index:i};
+            });
+          }
+        }},
+        tooltip:{callbacks:{label:c=>{
+          const pct=Math.round(c.raw/PROCS.length*100);
+          return ` ${c.label}: ${c.raw} (${pct}%)`;
+        }}}
+      },
+      onClick:(e,els)=>{
+        if(!els.length){ statusFilter=null; }
+        else{
+          const idx=els[0].index;
+          const grp=order.filter(s=>counts[s])[idx];
+          statusFilter=statusFilter===grp?null:grp;
+        }
+        buildStatusChart(); buildPrioBars(); buildEtaList(); updateKPIs(); applyFilters();
+      }
+    }
+  });
+}
+
+function buildPrioBars(){
+  const t=TR[currentLang];
+  const pool=getActiveProcs();
+  const counts={};
+  pool.forEach(p=>{ counts[p.prio]=(counts[p.prio]||0)+1; });
+  const total=pool.length||1;
+  const max=Math.max(...Object.values(counts),1);
+  const order=[1,2,3,4,5];
+  let html='';
+  order.forEach(pr=>{
+    if(!counts[pr]) return;
+    const pct=Math.round(counts[pr]/max*100);
+    const pctTotal=Math.round(counts[pr]/total*100);
+    const isAct = prioBarFilter===pr;
+    const clr=PRIO_COLORS[pr]||'#94a3b8';
+    const fillClr=isAct?clr:clr+'bb';
+    html+=`<div class="pbar-row${isAct?' pbar-act':''}" onclick="prioBarClick(${pr})"
+      title="${isAct?'Clique para remover filtro':'Filtrar por '+(t.prioLabels[pr]||'P'+pr)}">
+      <div class="pbar-lbl" style="width:80px">${t.prioLabels[pr]||'P'+pr}</div>
+      <div class="pbar-track" style="height:20px;border-radius:6px">
+        <div class="pbar-fill" style="width:${pct}%;background:${fillClr};height:100%;border-radius:6px;display:flex;align-items:center;padding-left:6px">
+          ${pct>18?`<span style="font-size:9px;font-weight:700;color:#fff;font-family:'IBM Plex Mono',monospace">${pctTotal}%</span>`:''}
+        </div>
+      </div>
+      <div style="width:36px;text-align:right;font-size:12px;font-weight:800;color:${clr};font-family:'IBM Plex Mono',monospace">${counts[pr]}</div>
+    </div>`;
+  });
+  document.getElementById('prioBars').innerHTML=html||'<p style="font-size:11px;color:var(--muted);padding:16px">Sem dados</p>';
+}
+
+function buildEtaList(){
+  const t = TR[currentLang];
+  const groupF = activeGroupFilter;
+
+  const pool2=getActiveProcs();
+  const candidates = pool2
+    .filter(p => p.status !== 'DELIVERED')
+    .filter(p => !groupF || p.group === groupF)
+    .map(p => {
+      const refDate = p.ete_real || p.ete_dl || '';
+      return {...p, _ref: refDate, _date: fd(refDate)};
+    })
+    .filter(p => p._date)
+    .sort((a,b) => a._date - b._date)
+    .slice(0, 8);
+
+  const listEl = document.getElementById('etaList');
+
+  if(!candidates.length){
+    listEl.innerHTML = `<div class="eta-empty">${t.ganttNoEte}</div>`;
+    return;
+  }
+
+  const allDates = candidates.map(p => p._date.getTime());
+  const rawMin = Math.min(...allDates, today.getTime());
+  const rawMax = Math.max(...allDates, today.getTime());
+  const winMin = new Date(rawMin); winMin.setDate(winMin.getDate() - 3);
+  const winMax = new Date(rawMax); winMax.setDate(winMax.getDate() + 4);
+  const span   = Math.max(winMax - winMin, 1);
+
+  function toPct(d){ return Math.max(0, Math.min(100, (d - winMin) / span * 100)); }
+
+  const step = (winMax - winMin) / 3;
+  const markerDates = [0,1,2,3].map(i => new Date(winMin.getTime() + step * i));
+  const fmtShort = d => {
+    const DD = String(d.getDate()).padStart(2,'0');
+    const MM = String(d.getMonth()+1).padStart(2,'0');
+    return DD+'/'+MM;
+  };
+  const todayFmt  = fmtShort(today);
+  const todayPct  = toPct(today);
+
+  let html = '<div class="gantt-date-header">';
+  markerDates.forEach(d => {
+    const isT = fmtShort(d) === todayFmt;
+    html += `<div class="gantt-date-lbl" style="${isT?'font-weight:700;color:#dc2626':''}">${fmtShort(d)}</div>`;
+  });
+  html += '</div>';
+
+  candidates.forEach((p, idx) => {
+    const barPct  = toPct(p._date);
+    const dlPct   = p.ete_dl ? toPct(fd(p.ete_dl)) : null;
+    const days = Math.round((p._date - today) / 86400000);
+
+    let chipCls, chipTxt;
+    if(p.du){
+      // Conteúdo da coluna DU tem prioridade
+      chipCls = days < 0 ? 'chip-late' : days <= 2 ? 'chip-warn' : 'chip-ok';
+      chipTxt = (days < 0 ? '⚠ ' : '') + p.du;
+    } else if(days < 0){
+      chipCls = 'chip-late';
+      chipTxt = '⚠ '+Math.abs(days)+t.ganttDaysAgo;
+    } else if(days === 0){
+      chipCls = 'chip-warn';
+      chipTxt = t.ganttToday;
+    } else if(days <= 2){
+      chipCls = 'chip-warn';
+      chipTxt = days+t.ganttDaysLeft;
+    } else {
+      chipCls = 'chip-ok';
+      chipTxt = days+t.ganttDaysLeft;
+    }
+
+    const barColor = days < 0 ? '#dc2626' : days <= 2 ? '#f59e0b' : '#059669';
+    const barAlpha = days < 0 ? '#dc262633' : days <= 2 ? '#f59e0b33' : '#05966933';
+    const grpBg  = p.group==='LIVOLTEK'?'#fef3c7':'#dbeafe';
+    const grpClr = p.group==='LIVOLTEK'?'#92400e':'#1e40af';
+    const grpLbl = p.group==='LIVOLTEK'?'LVT':'ELT';
+    const hasObs = p.obs && p.obs.length > 0;
+    const obsTipHtml = hasObs
+      ? `<div class="obs-tip">💬 ${p.obs.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>` : '';
+
+    // Label traduzido "hoje/today/今天" apenas na primeira linha
+    const todayLabelHtml = idx === 0
+      ? `<span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:700;white-space:nowrap;color:#dc2626;font-family:'IBM Plex Sans',sans-serif">${t.ganttToday}</span>`
+      : '';
+
+    html += `
+    <div class="eta-item">
+      ${obsTipHtml}
+      <div class="eta-proc" title="${p.id}">
+        ${p.id}
+        <span style="font-size:8px;background:${grpBg};color:${grpClr};border-radius:3px;padding:0 3px;font-weight:700">${grpLbl}</span>
+      </div>
+      <div class="eta-bar-track">
+        <div class="gantt-today-line" style="left:${todayPct.toFixed(1)}%;background:#dc2626">${todayLabelHtml}</div>
+        <div class="eta-bar-fill" style="width:${barPct.toFixed(1)}%;background:${barAlpha};border:1px solid ${barColor}88"></div>
+        ${dlPct!==null ? `<div class="gantt-dl-dot" style="left:${dlPct.toFixed(1)}%;background:${barColor}"></div>` : ''}
+      </div>
+      <div class="eta-chip"><span class="${chipCls}">${chipTxt}</span></div>
+    </div>`;
+  });
+
+  html += `<div style="display:flex;gap:10px;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);flex-wrap:wrap">
+    <span style="font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#059669"></span>${t.ganttLegOk}</span>
+    <span style="font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f59e0b"></span>${t.ganttLegWarn}</span>
+    <span style="font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626"></span>${t.ganttLegLate}</span>
+    <span style="font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:#6b7280;border:1.5px solid #fff;outline:1px solid #6b7280"></span>${t.ganttLegDL}</span>
+    <span style="font-size:9px;color:var(--muted);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:2px;height:10px;background:#dc2626;border-radius:1px"></span>${t.ganttLegToday}</span>
+  </div>`;
+
+  listEl.innerHTML = html;
+}
+
+/* ═══════════ FILTERS ═══════════ */
+let sortKey2=null, sortDir2=1, activeGroupFilter='';
+function setGroupFilter(g){
+  activeGroupFilter = activeGroupFilter===g ? '' : g;
+  // Update button styles
+  ['','ELETRA','LIVOLTEK'].forEach(v=>{
+    const el=document.getElementById('grp-'+v);
+    if(el) el.className='grp-btn'+(activeGroupFilter===v?' act':'');
+  });
+  buildEtaList();
+  applyFilters();
+}
+
+
+/* ── getActiveProcs: aplica todos os filtros ativos ─────────────── */
+// Multi-select helpers
+let msStatusSel=[];  // status selecionados
+let msModeSel=[];    // modais selecionados
+let msPrioSel=[];    // prioridades selecionadas
+let msEtaSel=[];     // períodos ETA selecionados (MM/YYYY)
+let msMonthSel=[];   // meses de produção selecionados
+
+function toggleMs(id){
+  const d=document.getElementById(id);
+  if(!d) return;
+  const isOpen=d.style.display!=='none';
+  // Fechar todos primeiro
+  document.querySelectorAll('.ms-dropdown').forEach(el=>el.style.display='none');
+  if(!isOpen) d.style.display='block';
+}
+// Fechar dropdowns ao clicar fora
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ms-wrap'))
+    document.querySelectorAll('.ms-dropdown').forEach(el=>el.style.display='none');
+});
+
+function msChange(type){
+  const cfg={
+    status:{arr:'msStatusSel',drop:'#statusDrop input:checked',btn:'statusMsBtn'},
+    mode:{arr:'msModeSel',drop:'#modeDrop input:checked',btn:'modeMsBtn'},
+    prio:{arr:'msPrioSel',drop:'#prioDrop input:checked',btn:'prioMsBtn'},
+    eta:{arr:'msEtaSel',drop:'#etaDrop input:checked',btn:'etaMsBtn'},
+    month:{arr:'msMonthSel',drop:'#monthDrop input:checked',btn:'monthMsBtn'}
+  };
+  const c=cfg[type]; if(!c) return;
+  const vals=Array.from(document.querySelectorAll(c.drop)).map(el=>el.value);
+  if(type==='status') msStatusSel=vals;
+  else if(type==='mode') msModeSel=vals;
+  else if(type==='prio') msPrioSel=vals.map(Number);
+  else if(type==='eta') msEtaSel=vals;
+  else if(type==='month') msMonthSel=vals;
+  const btn=document.getElementById(c.btn);
+  if(btn) btn.textContent=vals.length?vals.length+' selecionado(s) ▾':'Todos ▾';
+  buildStatusChart(); buildPrioBars(); buildEtaList(); applyFilters();
+}
+
+function getActiveProcs(){
+  // prioSel replaced by msPrioSel multi-select
+  const search=document.getElementById('searchInp')?.value.toLowerCase()||'';
+  return PROCS.filter(p=>{
+    if(msEtaSel.length&&!msEtaSel.includes(p.eta_period)) return false;
+    if(msMonthSel.length&&!msMonthSel.includes(p.month)) return false;
+    if(search&&!p.id.toLowerCase().includes(search)) return false;
+    if(kpiFilter==='active'&&p.status==='DELIVERED') return false;
+    if(kpiFilter==='customs_all'&&p.status!=='CUSTOMS') return false;
+    if(kpiFilter==='late'&&!(fd(p.ete_dl)<today&&p.status!=='DELIVERED'&&p.ete_dl)) return false;
+    if(statusFilter&&p.status!==statusFilter) return false;
+    // Multi-select status filter (checkboxes)
+    if(!statusFilter&&msStatusSel.length&&!msStatusSel.includes(p.status)) return false;
+    // Single-select statusSel (used by some KPI clicks)
+    const _stSel=document.getElementById('statusSel')?.value||'';
+    if(!statusFilter&&!msStatusSel.length&&!kpiFilter&&_stSel&&p.status!==_stSel) return false;
+    if(prioBarFilter&&p.prio!==prioBarFilter) return false;
+    if(!prioBarFilter&&msPrioSel.length&&!msPrioSel.includes(p.prio)) return false;
+    // Multi-select mode filter
+    if(msModeSel.length&&!msModeSel.includes(p.mode)) return false;
+    if(activeGroupFilter&&p.group!==activeGroupFilter) return false;
+    return true;
+  });
+}
+
+function applyFilters(){
+  const t=TR[currentLang];
+  // Usa getActiveProcs() como única fonte de verdade — igual aos gráficos
+  let filtered=getActiveProcs();
+  // Aplicar busca de texto (não está em getActiveProcs)
+  const search=document.getElementById('searchInp')?.value.toLowerCase()||'';
+  if(search) filtered=filtered.filter(p=>
+    p.id.toLowerCase().includes(search)||p.month.toLowerCase().includes(search)
+  );
+  
+  if(sortKey2){
+    filtered.sort((a,b)=>{
+      let av=a[sortKey2],bv=b[sortKey2];
+      if(sortKey2==='eta'||sortKey2==='ete_real'||sortKey2==='ete_dl'){
+        av=fd(a[sortKey2])?.getTime()||0; bv=fd(b[sortKey2])?.getTime()||0;
+      } else if(sortKey2==='cc_days'){
+        av=parseInt(a.cc_days)||0; bv=parseInt(b.cc_days)||0;
+      }
+      if(av<bv) return -sortDir2; if(av>bv) return sortDir2; return 0;
+    });
+  } else {
+    filtered.sort((a,b)=>a.prio-b.prio);
+  }
+  
+  buildTable(filtered,t);
+  setText('resultsCt',t.results(filtered.length));
+  setText('tFoot',t.footTxt(filtered.length,PROCS.length));
+}
+
+function sortBy(key){
+  if(sortKey2===key) sortDir2=-sortDir2; else { sortKey2=key; sortDir2=1; }
+  applyFilters();
+}
+
+function clearFilters(){
+  document.getElementById('searchInp').value='';
+  document.getElementById('statusSel').value='';
+  document.getElementById('prioSel').value='';
+  document.getElementById('modeSel').value='';
+  statusFilter=null; sortKey2=null; sortDir2=1; activeGroupFilter='';
+  msStatusSel=[]; msModeSel=[];
+  const ps=document.getElementById('periodSel'); if(ps) ps.value='';
+  document.querySelectorAll('#statusDrop input,#modeDrop input').forEach(el=>el.checked=false);
+  ['statusMsBtn','modeMsBtn','prioMsBtn','etaMsBtn','monthMsBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='Todos ▾';});
+  kpiFilter=null; prioBarFilter=null; kpiActive=null;
+  KPI_IDS.forEach(id=>{ const el=document.getElementById(id); if(el) el.classList.remove('kpi-act'); });
+  ['','ELETRA','LIVOLTEK'].forEach(v=>{const el=document.getElementById('grp-'+v);if(el)el.className='grp-btn'+(v===''?' act':'');});
+  buildStatusChart(); buildEtaList(); buildPrioBars(); applyFilters();
+}
+
+/* ═══════════ TABLE ═══════════ */
+function buildTable(data,t){
+  let html='';
+  if(!data.length){ html='<tr><td colspan="14" class="empty">Nenhum processo encontrado para os filtros selecionados.</td></tr>'; }
+  data.forEach(p=>{
+    const lateReal = p.ete_real && fd(p.ete_real)<today && p.status!=='DELIVERED';
+    const lateDl   = p.ete_dl   && fd(p.ete_dl)<today   && p.status!=='DELIVERED';
+    const pct=Math.round(p.step/20*100);
+    const modeLbl=t.modeLabels[p.mode]||p.mode;
+    const stLbl=t.statusLabels[p.status]||p.status;
+    const stCls=STATUS_BADGE[p.status]||'b-unk';
+    const nextLbl=getStepName(p.nextStep,currentLang)||('S'+p.nextStep);
+    const prioBg=PRIO_COLORS[p.prio]||'#94a3b8';
+    const eteDlTxt=p.ete_dl||'–';
+    const eteRealTxt=p.ete_real||'–';
+    const ccDaysTxt=p.cc_days||'–';
+    const grpBg  = p.group==='LIVOLTEK' ? '#fef3c7' : '#dbeafe';
+    const grpClr = p.group==='LIVOLTEK' ? '#92400e' : '#1e40af';
+    const grpLbl = p.group==='LIVOLTEK' ? '⚡ Livoltek' : '🏭 Eletra';
+    const obsTxt = (p.obs||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const obsCell = obsTxt
+      ? `<td class="td-obs"><span style="font-size:13px">💬</span><div class="obs-td-tip">💬 ${obsTxt}</div></td>`
+      : `<td style="text-align:center"><span class="obs-none">·</span></td>`;
+    // Responsável: badge colorido se preenchido
+    const respTxt = (p.resp||'COMEX').trim();
+    const respCell = `<td><span style="display:inline-block;background:#f0f4fb;color:#1a3480;border-radius:4px;padding:1px 7px;font-size:10px;font-weight:600;white-space:nowrap">${respTxt}</span></td>`;
+    const safeId=p.id.replace(/'/g,"\\'");
+    html+=`<tr onclick="showDetail(PROCS.find(x=>x.id==='${safeId}'))" title="Clique para ver detalhes">
+      <td class="td-proc">${p.id}</td>
+      <td class="td-prio"><div class="prio-dot" style="background:${prioBg}">P${p.prio}</div></td>
+      <td><span class="badge" style="background:${grpBg};color:${grpClr}">${grpLbl}</span></td>
+      <td>${modeLbl}</td>
+      <td><span class="badge ${stCls}">${stLbl}</span></td>
+      <td><div class="step-wrap">
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="step-track"><div class="step-fill" style="width:${pct}%"></div></div>
+          <div class="step-num">${p.step}/20</div>
+        </div>
+        ${p.step>0?`<div style="font-size:9px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px" title="${getStepName(p.step,currentLang)}">${getStepName(p.step,currentLang)}</div>`:''}
+      </div></td>
+      <td style="font-size:10px;color:var(--text2)">${p.status==='DELIVERED'?'–':(p.nextStep?'S'+(typeof p.nextStep==='number'?p.nextStep:'17b')+': ':'')+nextLbl}</td>
+      ${respCell}
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px">${p.eta||'–'}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${lateDl?'#dc2626':'inherit'}">${eteDlTxt}${lateDl?' <span class="late-tag">'+t.lateTag+'</span>':''}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:${p.status==='DELIVERED'?'#059669':'#dc2626'}">${eteRealTxt}${lateReal?' <span class="late-tag">'+t.lateTag+'</span>':''}</td>
+      <td style="text-align:center;font-size:11px;font-weight:600">${p.ctnr||'–'}</td>
+      <td style="font-size:10px;color:var(--muted);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.analyst||''}">${p.analyst||'–'}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;text-align:center;font-weight:600">${ccDaysTxt}</td>
+      <td style="font-size:10px;color:var(--muted)">${p.month||'–'}</td>
+      ${obsCell}
+    </tr>`;
+  });
+  document.getElementById('tBody').innerHTML=html;
+}
+</script>
+
+
+<!-- ═══ ADMIN PASSWORD MODAL ═══ -->
+<div id="adminOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:28px 32px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:'IBM Plex Sans',sans-serif">
+    <h3 style="margin:0 0 6px;font-size:15px;color:#0f2057">🔐 Acesso Administrador</h3>
+    <p style="margin:0 0 18px;font-size:11px;color:#64748b" id="adminActionDesc">Informe a senha para continuar.</p>
+    <input id="adminPwdInput" type="password" placeholder="Senha..." autocomplete="off"
+      style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none;margin-bottom:14px"
+      onkeydown="if(event.key==='Enter')confirmAdmin()">
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeAdmin()" style="padding:7px 16px;border:1.5px solid #e2e8f0;background:#fff;border-radius:8px;cursor:pointer;font-size:12px">Cancelar</button>
+      <button onclick="confirmAdmin()" style="padding:7px 16px;background:#0f2057;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600">Confirmar</button>
+    </div>
+    <p id="adminErr" style="color:#dc2626;font-size:10px;margin:8px 0 0;display:none">Senha incorreta.</p>
+  </div>
+</div>
+
+<!-- ═══════════ DETAIL PANEL ═══════════ -->
+<div class="dp-overlay" id="dpOverlay" onclick="closeDetail()"></div>
+<div class="dp-panel" id="dpPanel">
+  <div class="dp-hdr">
+    <div class="dp-hdr-top">
+      <span class="dp-proc-id" id="dpId">—</span>
+      <button class="dp-close" onclick="closeDetail()" title="Fechar">✕</button>
+    </div>
+    <div class="dp-badges" id="dpBadges"></div>
+  </div>
+  <div class="dp-body" id="dpBody"></div>
+  <div class="dp-footer" id="dpFooter"></div>
+</div>
+
+<!-- __SNAPSHOT_DATA__ -->
+</body>
+</html>
