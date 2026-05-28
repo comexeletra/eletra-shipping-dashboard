@@ -450,22 +450,10 @@ tfoot td{font-size:11px;color:var(--muted);padding:8px 11px;border-top:2px solid
         </div>
       </div>
       <div class="ctrl-grp">
-        <label id="lPrio">Prio.:</label>
+        <label id="lEtePeriod">ETE:</label>
         <div class="ms-wrap">
-          <div class="ms-btn" onclick="toggleMs('prioDrop')" id="prioMsBtn">Todas ▾</div>
-          <div class="ms-dropdown" id="prioDrop" style="display:none">
-            <label><input type="checkbox" value="1" onchange="msChange('prio')"><span style="background:#dc2626;color:#fff;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">P1</span> Urgente</label>
-            <label><input type="checkbox" value="2" onchange="msChange('prio')"><span style="background:#ea6c1a;color:#fff;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">P2</span> Alta</label>
-            <label><input type="checkbox" value="3" onchange="msChange('prio')"><span style="background:#f59e0b;color:#fff;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">P3</span> Média</label>
-            <label><input type="checkbox" value="4" onchange="msChange('prio')"><span style="background:#3b82f6;color:#fff;border-radius:4px;padding:1px 5px;font-size:9px;font-weight:700">P4</span> Baixa</label>
-          </div>
-        </div>
-      </div>
-      <div class="ctrl-grp">
-        <label id="lMonthProd">Mês Prod.:</label>
-        <div class="ms-wrap">
-          <div class="ms-btn" onclick="toggleMs('monthDrop')" id="monthMsBtn">Todos ▾</div>
-          <div class="ms-dropdown" id="monthDrop" style="display:none;max-height:240px;overflow-y:auto"></div>
+          <div class="ms-btn" onclick="toggleMs('eteDrop')" id="eteMsBtn">Todos ▾</div>
+          <div class="ms-dropdown" id="eteDrop" style="display:none;max-height:240px;overflow-y:auto"></div>
         </div>
       </div>
       <div class="ctrl-grp">
@@ -653,7 +641,7 @@ const STATUS_LBL = {
 let PROCS=[], currentLang='pt', lastUpTime='';
 let sortKey='total', sortDir=-1;
 let despFilter=null, activeGroupFilter='', kpiActive=null;
-let msStatusSel=[], msPrioSel=[], msMonthSel=[], msModeSel=[], msAnalystSel=[];
+let msStatusSel=[], msEteSel=[], msModeSel=[], msAnalystSel=[];
 let chartBarObj=null, chartPieObj=null;
 let despChartFilter=null;
 
@@ -670,7 +658,7 @@ const TR={
     thProc:'Processo',thPrio:'Prio.',thGroup:'Grupo',thAnalyst:'Analista',thStatus:'Status',
     thArm:'Armazenagem',thPayArm:'Pag. Arm.',thDem:'Demurrage',thPayDem:'Pag. Dem.',
     thMul:'Multas',thDevol:'Dev. Container',thTot:'Total',
-    lSearch:'Buscar:',lStatus:'Status:',lPrio:'Prio.:',lMonthProd:'Mês Prod.:',lMode:'Modal:',lAnalyst:'Analista:',lClear:'Limpar',
+    lSearch:'Buscar:',lStatus:'Status:',lEtePeriod:'ETE:',lMode:'Modal:',lAnalyst:'Analista:',lClear:'Limpar',
     lastUp:t=>'Atualização: '+t,results:n=>n+' processos',foot:(f,t)=>'Exibindo '+f+' de '+t,
     noData:'Nenhum processo encontrado.',connTxt:'Snapshot',
     dzText:'Arraste o arquivo COMEX - FUP Processes (.xlsx)',dzBtn:'Escolher Arquivo',dzSub:'ou clique · suporta .xlsx e .xls',
@@ -687,7 +675,7 @@ const TR={
     thProc:'Process',thPrio:'Prio.',thGroup:'Group',thAnalyst:'Analyst',thStatus:'Status',
     thArm:'Storage',thPayArm:'Pay. Sto.',thDem:'Demurrage',thPayDem:'Pay. Dem.',
     thMul:'Penalties',thDevol:'Dev. Container',thTot:'Total',
-    lSearch:'Search:',lStatus:'Status:',lPrio:'Prio.:',lMonthProd:'Month:',lMode:'Mode:',lAnalyst:'Analyst:',lClear:'Clear',
+    lSearch:'Search:',lStatus:'Status:',lEtePeriod:'ETE:',lMode:'Mode:',lAnalyst:'Analyst:',lClear:'Clear',
     lastUp:t=>'Updated: '+t,results:n=>n+' processes',foot:(f,t)=>'Showing '+f+' of '+t,
     noData:'No processes found.',connTxt:'Snapshot',
     dzText:'Drop COMEX - FUP Processes (.xlsx) here',dzBtn:'Choose File',dzSub:'or click · supports .xlsx and .xls',
@@ -704,7 +692,7 @@ const TR={
     thProc:'流程',thPrio:'优先级',thGroup:'集团',thAnalyst:'分析员',thStatus:'状态',
     thArm:'仓储费',thPayArm:'付款(仓储)',thDem:'滞期费',thPayDem:'付款(滞期)',
     thMul:'罚款',thDevol:'退箱',thTot:'合计',
-    lSearch:'搜索:',lStatus:'状态:',lPrio:'优先级:',lMonthProd:'月份:',lMode:'运输:',lAnalyst:'分析员:',lClear:'清除',
+    lSearch:'搜索:',lStatus:'状态:',lEtePeriod:'ETE:',lMode:'运输:',lAnalyst:'分析员:',lClear:'清除',
     lastUp:t=>'更新: '+t,results:n=>n+' 个流程',foot:(f,t)=>'显示 '+f+' / '+t,
     noData:'未找到流程。',connTxt:'快照',
     dzText:'拖放 COMEX - FUP Processes (.xlsx)',dzBtn:'选择文件',dzSub:'或点击选择 · 支持 .xlsx 和 .xls',
@@ -762,8 +750,8 @@ function setLang(l){
   setText('thStatus',t.thStatus);setText('thArm',t.thArm);setText('thPayArm',t.thPayArm);
   setText('thDem',t.thDem);setText('thPayDem',t.thPayDem);setText('thMul',t.thMul);
   setText('thDevol',t.thDevol);setText('thTot',t.thTot);
-  setText('lSearch',t.lSearch);setText('lStatus',t.lStatus);setText('lPrio',t.lPrio);
-  setText('lMonthProd',t.lMonthProd);setText('lMode',t.lMode);setText('lAnalyst',t.lAnalyst);setText('lClear',t.lClear);
+  setText('lSearch',t.lSearch);setText('lStatus',t.lStatus);setText('lEtePeriod',t.lEtePeriod);
+  setText('lMode',t.lMode);setText('lAnalyst',t.lAnalyst);setText('lClear',t.lClear);
   setText('connTxt',t.connTxt);setText('tabUpload',t.tabUpload);
   setText('dzText',t.dzText);setText('dzBtn',t.dzBtn);setText('dzSub',t.dzSub);
   const sb=document.getElementById('snapBtn');if(sb)sb.textContent=t.snapBtn;
@@ -783,17 +771,17 @@ function init(){
     '🕒 '+TR[currentLang].lastUp(lastUpTime)+' · Aba: FUP - Status details · '+PROCS.length+' processos';
   // Add snap btn
   document.getElementById('snapBtn').style.display='';
-  buildMonthOptions();
+  buildEteOptions();
   buildAnalystOptions();
   document.getElementById('phState').style.display='none';
   document.getElementById('dashContent').style.display='';
   render();
 }
 
-function buildMonthOptions(){
-  const months=[...new Set(PROCS.map(p=>p.month).filter(Boolean))].sort();
-  const el=document.getElementById('monthDrop');
-  el.innerHTML=months.map(m=>`<label><input type="checkbox" value="${m}" onchange="msChange('month')"> ${m}</label>`).join('');
+function buildEteOptions(){
+  const periods=[...new Set(PROCS.map(p=>p.ete_period).filter(Boolean))].sort();
+  const el=document.getElementById('eteDrop');
+  el.innerHTML=periods.map(m=>`<label><input type="checkbox" value="${m}" onchange="msChange('ete')"> ${m}</label>`).join('');
 }
 function buildAnalystOptions(){
   const ans=[...new Set(PROCS.map(p=>p.analyst).filter(Boolean))].sort();
@@ -807,9 +795,9 @@ function buildAnalystOptions(){
 function kpiClick(key,fn){
   if(kpiActive===key){clearFilters();return;}
   kpiActive=key;despFilter=null;activeGroupFilter='';
-  msStatusSel=[];msPrioSel=[];msMonthSel=[];msModeSel=[];msAnalystSel=[];
+  msStatusSel=[];msEteSel=[];msModeSel=[];msAnalystSel=[];
   document.querySelectorAll('.ms-dropdown input[type=checkbox]').forEach(e=>e.checked=false);
-  ['statusMsBtn','prioMsBtn','monthMsBtn','modeMsBtn','analystMsBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent='Todos ▾';});
+  ['statusMsBtn','eteMsBtn','modeMsBtn','analystMsBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent='Todos ▾';});
   document.getElementById('searchInp').value='';
   ['','ELETRA','LIVOLTEK'].forEach(v=>{const el=document.getElementById('grp-'+v);if(el)el.className='grp-btn'+(v===''?' act':'');});
   // reset desp chips
@@ -847,14 +835,13 @@ document.addEventListener('click',e=>{
 });
 function msChange(type){
   const cfg={
-    status:['statusDrop','statusMsBtn'],prio:['prioDrop','prioMsBtn'],
-    month:['monthDrop','monthMsBtn'],mode:['modeDrop','modeMsBtn'],analyst:['analystDrop','analystMsBtn']
+    status:['statusDrop','statusMsBtn'],ete:['eteDrop','eteMsBtn'],
+    mode:['modeDrop','modeMsBtn'],analyst:['analystDrop','analystMsBtn']
   };
   const [dropId,btnId]=cfg[type];
   const vals=[...document.querySelectorAll('#'+dropId+' input:checked')].map(e=>e.value);
   if(type==='status') msStatusSel=vals;
-  else if(type==='prio') msPrioSel=vals.map(Number);
-  else if(type==='month') msMonthSel=vals;
+  else if(type==='ete') msEteSel=vals;
   else if(type==='mode') msModeSel=vals;
   else if(type==='analyst') msAnalystSel=vals;
   const btn=document.getElementById(btnId);
@@ -863,10 +850,10 @@ function msChange(type){
 }
 function clearFilters(){
   despFilter=null;activeGroupFilter='';kpiActive=null;
-  msStatusSel=[];msPrioSel=[];msMonthSel=[];msModeSel=[];msAnalystSel=[];
+  msStatusSel=[];msEteSel=[];msModeSel=[];msAnalystSel=[];
   despChartFilter=null;
   document.querySelectorAll('.ms-dropdown input[type=checkbox]').forEach(e=>e.checked=false);
-  ['statusMsBtn','prioMsBtn','monthMsBtn','modeMsBtn','analystMsBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent='Todos ▾';});
+  ['statusMsBtn','eteMsBtn','modeMsBtn','analystMsBtn'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent='Todos ▾';});
   document.getElementById('searchInp').value='';
   ['','ELETRA','LIVOLTEK'].forEach(v=>{const el=document.getElementById('grp-'+v);if(el)el.className='grp-btn'+(v===''?' act':'');});
   document.querySelectorAll('.desp-chip-btn').forEach(b=>b.classList.remove('act'));
@@ -880,8 +867,7 @@ function getFiltered(){
     if(search&&!p.id.toLowerCase().includes(search)) return false;
     if(activeGroupFilter&&p.group!==activeGroupFilter) return false;
     if(msStatusSel.length&&!msStatusSel.includes(p.status)) return false;
-    if(msPrioSel.length&&!msPrioSel.includes(p.prio)) return false;
-    if(msMonthSel.length&&!msMonthSel.includes(p.month)) return false;
+    if(msEteSel.length&&!msEteSel.includes(p.ete_period)) return false;
     if(msModeSel.length&&!msModeSel.includes(p.mode)) return false;
     if(msAnalystSel.length&&!msAnalystSel.includes(p.analyst)) return false;
     const arm=tonum(p.storage_val),dem=tonum(p.demurrage_val),mul=tonum(p.penalties_val);
@@ -916,28 +902,31 @@ function sortBy(key){
 /* ════════════════════════════════════════════════════
    RENDER
 ════════════════════════════════════════════════════ */
-function render(){updateKPIs();buildCharts();applyFilters();}
+function render(){buildCharts();applyFilters();}
 
 function updateKPIs(){
-  const all=PROCS;
-  const tArm=all.reduce((s,p)=>s+tonum(p.storage_val),0);
-  const tDem=all.reduce((s,p)=>s+tonum(p.demurrage_val),0);
-  const tMul=all.reduce((s,p)=>s+tonum(p.penalties_val),0);
-  const nArm=all.filter(p=>tonum(p.storage_val)>0).length;
-  const nDem=all.filter(p=>tonum(p.demurrage_val)>0).length;
-  const nMul=all.filter(p=>tonum(p.penalties_val)>0).length;
-  const nDesp=all.filter(p=>tonum(p.storage_val)+tonum(p.demurrage_val)+tonum(p.penalties_val)>0).length;
-  const nDevol=all.filter(p=>p.devolution).length;
+  const data=getFiltered();          // ← usa os filtros ativos
+  const all=PROCS;                   // totais globais para sub-labels
+  const tArm=data.reduce((s,p)=>s+tonum(p.storage_val),0);
+  const tDem=data.reduce((s,p)=>s+tonum(p.demurrage_val),0);
+  const tMul=data.reduce((s,p)=>s+tonum(p.penalties_val),0);
+  const nArm=data.filter(p=>tonum(p.storage_val)>0).length;
+  const nDem=data.filter(p=>tonum(p.demurrage_val)>0).length;
+  const nMul=data.filter(p=>tonum(p.penalties_val)>0).length;
+  const nDesp=data.filter(p=>tonum(p.storage_val)+tonum(p.demurrage_val)+tonum(p.penalties_val)>0).length;
+  const nDevol=data.filter(p=>p.devolution).length;
+  const isFiltered=data.length<all.length;
+  const suffix=isFiltered?` (${data.length}/${all.length})`:'';
   setText('kValTotal',fmtBRLshort(tArm+tDem+tMul));
-  setText('kSubTotal',fmtBRL(tArm+tDem+tMul));
+  setText('kSubTotal',fmtBRL(tArm+tDem+tMul)+suffix);
   setText('kValArm',fmtBRLshort(tArm));
-  setText('kSubArm',nArm+' processos · '+fmtBRL(tArm));
+  setText('kSubArm',nArm+' proc.'+suffix+' · '+fmtBRL(tArm));
   setText('kValDem',fmtBRLshort(tDem));
-  setText('kSubDem',nDem+' processos · '+fmtBRL(tDem));
+  setText('kSubDem',nDem+' proc.'+suffix+' · '+fmtBRL(tDem));
   setText('kValMul',fmtBRLshort(tMul));
-  setText('kSubMul',nMul+' processos · '+fmtBRL(tMul));
+  setText('kSubMul',nMul+' proc.'+suffix+' · '+fmtBRL(tMul));
   setText('kValWithDesp',nDesp);
-  setText('kSubWithDesp','de '+all.length+' processos total');
+  setText('kSubWithDesp','de '+data.length+' filtrado'+(isFiltered?' / '+all.length+' total':''));
   setText('kValDevol',nDevol);
   setText('kSubDevol','com data de devolução');
 }
@@ -945,6 +934,8 @@ function updateKPIs(){
 function applyFilters(){
   const t=TR[currentLang];
   let data=getFiltered();
+  // KPIs acompanham filtros
+  updateKPIs();
   // Sort
   data.sort((a,b)=>{
     let av=a[sortKey],bv=b[sortKey];
@@ -1191,7 +1182,7 @@ function handleUpload(e){
       lastUpTime=new Date().toLocaleString('pt-BR')+' · '+file.name;
       setText('lastUpTxt',TR[currentLang].lastUp(lastUpTime));
       document.getElementById('lastUpdateBar').textContent='🕒 '+TR[currentLang].lastUp(lastUpTime)+' · Aba: '+sn+' · '+procs.length+' processos';
-      buildMonthOptions();buildAnalystOptions();render();
+      buildEteOptions();buildAnalystOptions();render();
       log.innerHTML+=`<br><span class="log-ok">✅ ${procs.length} processos carregados com sucesso</span>`;
       document.getElementById('snapBtn').style.display='';
     }catch(err){log.innerHTML+=`<br><span class="log-err">❌ Erro: ${err.message}</span>`;}
