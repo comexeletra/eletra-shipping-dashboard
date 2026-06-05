@@ -1478,7 +1478,8 @@ function showDetail(proc){
 
   // Pre-clearance
   if(p.preClear&&p.preClear.length){
-    html+=`<div class="dp-section"><div class="dp-sec-title">🔵 Pré-Embarque</div>`;
+    const preLabel=currentLang==='zh'?'🔵 预清关阶段':currentLang==='en'?'🔵 Pre-Customs Clearance':'🔵 Pré-Desembaraço';
+    html+=`<div class="dp-section"><div class="dp-sec-title">${preLabel}</div>`;
     p.preClear.forEach((pc,i)=>{
       const ok=!!pc.date;
       html+=`<div class="pre-row"><div class="pre-ico ${ok?'ok':'no'}">${ok?'✓':'·'}</div>
