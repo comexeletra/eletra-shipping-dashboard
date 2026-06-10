@@ -1411,7 +1411,7 @@ function parseExcel(wb){
 
     const statusRaw=xstr(row[COL_STATUS]);
     const modeRaw  =xstr(row[COL_MODE]);
-    const monthRaw =normalizeMonth(xstr(row[COL_MONTH]));
+    const monthRaw =normalizeMonth(parseMonth(xstr(row[COL_MONTH])));
     const eta      =xd(row[COL_ETA]);
     const etd      =xd(row[COL_ETD]);
     const ete_dl   =xd(row[COL_ETE_DL]);
@@ -1429,7 +1429,7 @@ function parseExcel(wb){
 
     procs.push({
       id:pname, prio, isP, orderNum, group:grp,
-      month:parseMonth(monthRaw),
+      month:monthRaw,
       eta, etd, ete_dl, ete_real, cc_days, cc_days_du, cc_days_target, delay_reason, obs,
       invoice, bl_hawb, containers,
       cargo_date: xd(row[21]),   // S1 REAL = Presença de Carga (col V, index 21)
