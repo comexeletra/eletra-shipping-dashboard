@@ -1051,16 +1051,16 @@ function serialToMonth(v){
   return MONTH_ABBR_PT[d.getUTCMonth()]+'/'+String(d.getUTCFullYear()).slice(-2);
 }
 function parseMonth(raw){
-  // raw may be: text "MAY_2026", number 46142.999, string "46142.999", or "4/30/26" (Excel M/D/YY)
+  // raw may be: text "MAY_2026", "AUG/2026", "JAN", number 46142.999, or "4/30/26"
   if(!raw&&raw!==0) return '';
   if(typeof raw==='number') return serialToMonth(raw)||String(raw);
   const s=String(raw).trim();
-  // Numeric serial as string (e.g. "46142" or "46142.999")
+  // Numeric serial as string
   if(/^\d{4,6}(\.\d+)?$/.test(s)){
     const n=parseFloat(s);
     if(n>366) return serialToMonth(n)||s;
   }
-  // Excel display format M/D/YY or M/D/YYYY (e.g. "4/30/26" or "4/30/2026")
+  // Excel M/D/YY or M/D/YYYY (e.g. "4/30/26")
   const mdyMatch=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
   if(mdyMatch){
     const month=parseInt(mdyMatch[1]);
@@ -1068,15 +1068,32 @@ function parseMonth(raw){
     if(year<100) year+=2000;
     if(month>=1&&month<=12) return MONTH_ABBR_PT[month-1]+'/'+String(year).slice(-2);
   }
-  // Legacy text format "MAY_2026" or "MAY_26"
-  const underMatch=s.match(/^([A-Za-z]{3})_(\d{4}|\d{2})$/);
+  // MON_YEAR with underscore: "MAY_2026", "MAY_26"
+  const underMatch=s.match(/^([A-Za-z]{3,})_(\d{4}|\d{2})$/);
   if(underMatch){
-    const en=underMatch[1].toUpperCase();
+    const en=underMatch[1].toUpperCase().slice(0,3);
     const yr=underMatch[2].length===4?underMatch[2].slice(-2):underMatch[2];
     const idx=MONTH_ABBR.indexOf(en);
     if(idx>=0) return MONTH_ABBR_PT[idx]+'/'+yr;
   }
-  return s; // retorna como está se não reconhecido
+  // MON/YEAR with slash: "AUG/2026", "AUG/26"
+  const slashMatch=s.match(/^([A-Za-z]{3,})\/(\d{4}|\d{2})$/);
+  if(slashMatch){
+    const en=slashMatch[1].toUpperCase().slice(0,3);
+    const yr=slashMatch[2].length===4?slashMatch[2].slice(-2):slashMatch[2];
+    const idx=MONTH_ABBR.indexOf(en);
+    if(idx>=0) return MONTH_ABBR_PT[idx]+'/'+yr;
+  }
+  // Bare 3-letter month with no year: "JAN", "FEV", "ABR" etc. → default year 2026
+  const bareMatch=s.match(/^([A-Za-z]{3,4})$/);
+  if(bareMatch){
+    const en=bareMatch[1].toUpperCase().slice(0,3);
+    const PT_MAP={JAN:0,FEV:1,FEB:1,MAR:2,ABR:3,APR:3,MAI:4,MAY:4,JUN:5,JUL:6,AGO:7,AUG:7,SET:8,SEP:8,OUT:9,OCT:9,NOV:10,DEZ:11,DEC:11};
+    const idx=PT_MAP[en];
+    if(idx!==undefined) return MONTH_ABBR_PT[idx]+'/26';
+  }
+  // MONTH_NAME_YEAR: "JANUARY_2026", "FEVEREIRO/2026" (full names)
+  return s;
 }
 
 /* ═══════════ EXCEL PARSER ═══════════ */
