@@ -1744,11 +1744,17 @@ function buildEtaMonthOptions(){
   const MONTH_NUM={JAN:1,FEV:2,FEB:2,MAR:3,ABR:4,APR:4,MAI:5,MAY:5,JUN:6,JUL:7,AGO:8,AUG:8,SET:9,SEP:9,OUT:10,OCT:10,NOV:11,DEZ:12,DEC:12};
   function monthKey(m){
     const parts=m.toUpperCase().split(/[_\/\s-]+/);
-    const yr=parseInt(parts[1]||parts[0]||'0');
+    const rawYr=parseInt(parts[1]||'0');
+    // yr: se 2 dígitos <50 → 20xx; se 0 (sem ano) → 2026 como default
+    const yr=rawYr===0?2026:(rawYr<100?rawYr+2000:rawYr);
     const mn=MONTH_NUM[parts[0]?.slice(0,3)]||99;
     return yr*100+mn;
   }
-  const prodMonths=[...new Set(PROCS.map(p=>p.month).filter(Boolean))];
+  // Re-normalizar ao construir dropdown (garante anos em meses sem /YY)
+  const prodMonths=[...new Set(PROCS.map(p=>{
+    const raw=p.month||'';
+    return raw.includes('/')?raw:normalizeMonth(parseMonth(raw));
+  }).filter(Boolean))];
   // Garantir presença de meses futuros previstos
   const futureMths=['Jan/26','Fev/26','Mar/26','Abr/26','Mai/26','Jun/26','Jul/26','Ago/26','Set/26','Out/26','Nov/26','Dez/26'];
   futureMths.forEach(m=>{ if(!prodMonths.includes(m)) prodMonths.push(m); });
