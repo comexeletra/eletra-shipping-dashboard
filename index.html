@@ -1945,7 +1945,7 @@ function saveSnapshot(){
    ───────────────────────────────────────────── */
 let msalInstance=null,spAccount=null;
 function loadSPConfig(){
-  const ci=localStorage.getItem('sp_clientId')||'',ti=localStorage.getItem('sp_tenantId')||'',fu=localStorage.getItem('sp_fileUrl')||'';
+  const ci=localStorage.getItem('sp_clientId')||'',ti=localStorage.getItem('sp_tenantId')||'',fu=localStorage.getItem('sp_fileUrl')||'https://eletraenergy365.sharepoint.com/:x:/s/comex/IQB3guWX8aShRZwdRc8Mi2OHAe8BICxTQiDlcHHeTZ9kcjY?e=dDV0oF';
   if(document.getElementById('spClientId')) document.getElementById('spClientId').value=ci;
   if(document.getElementById('spTenantId')) document.getElementById('spTenantId').value=ti;
   if(document.getElementById('spFileUrl'))  document.getElementById('spFileUrl').value=fu;
