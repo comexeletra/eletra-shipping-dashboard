@@ -1973,13 +1973,35 @@ function spLog(msg,type='info'){
   el.innerHTML+=`<div style="padding:4px 8px;background:${b[type]||b.info};color:${c[type]||c.info};border-radius:4px;font-size:10px;margin-top:4px;font-family:'IBM Plex Mono',monospace">${new Date().toLocaleTimeString('pt-BR')} · ${msg}</div>`;
   el.scrollTop=el.scrollHeight;
 }
+const MSAL_CDNS=[
+  'https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js',
+  'https://alcdn.msftauth.net/browser/2.38.3/js/msal-browser.min.js',
+  'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js',
+  'https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js'
+];
+function loadScriptOnce(src){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src; s.onload=()=>resolve(); s.onerror=()=>reject(new Error('fail '+src));
+    document.head.appendChild(s);
+  });
+}
+async function ensureMsal(){
+  if(typeof msal!=='undefined') return true;
+  for(const url of MSAL_CDNS){
+    try{ await loadScriptOnce(url); if(typeof msal!=='undefined') return true; }catch(e){}
+  }
+  return typeof msal!=='undefined';
+}
 async function spConnect(){
   const clientId=(document.getElementById('spClientId').value||'').trim();
   const tenantId=(document.getElementById('spTenantId').value||'').trim();
   const fileUrl=(document.getElementById('spFileUrl').value||'').trim();
   if(!clientId||!tenantId){ spLog('⚠ Preencha Client ID e Tenant ID antes de conectar.','err'); return; }
   if(!fileUrl){ spLog('⚠ Informe a URL do arquivo no SharePoint.','err'); return; }
-  if(typeof msal==='undefined'){ spLog('⚠ Biblioteca MSAL não carregou. Verifique conexão com internet.','err'); return; }
+  spLog('🔄 Carregando biblioteca de autenticação...');
+  const ok=await ensureMsal();
+  if(!ok){ spLog('⚠ Não foi possível carregar a biblioteca MSAL (CDN bloqueado pela rede). Tente em outra rede.','err'); return; }
   spLog('🔄 Iniciando autenticação Microsoft 365 (OAuth2 PKCE)...');
   try{
     msalInstance=new msal.PublicClientApplication({
