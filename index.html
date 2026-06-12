@@ -1965,6 +1965,8 @@ function switchTab(tab){
   }
 }
 function spLog(msg,type='info'){
+  const st=document.getElementById('spStatus');
+  if(st) st.textContent=msg;
   const el=document.getElementById('ulogSP'); if(!el) return;
   const c={info:'#1e40af',ok:'#065f46',err:'#991b1b',warn:'#92400e'};
   const b={info:'#dbeafe',ok:'#d1fae5',err:'#fee2e2',warn:'#fef3c7'};
@@ -1978,8 +1980,7 @@ async function spConnect(){
   if(!clientId||!tenantId){ spLog('⚠ Preencha Client ID e Tenant ID antes de conectar.','err'); return; }
   if(!fileUrl){ spLog('⚠ Informe a URL do arquivo no SharePoint.','err'); return; }
   if(typeof msal==='undefined'){ spLog('⚠ Biblioteca MSAL não carregou. Verifique conexão com internet.','err'); return; }
-  document.getElementById('spStatus').textContent='🔄 Iniciando autenticação...';
-  spLog('Iniciando autenticação Microsoft 365 (OAuth2 PKCE)...');
+  spLog('🔄 Iniciando autenticação Microsoft 365 (OAuth2 PKCE)...');
   try{
     msalInstance=new msal.PublicClientApplication({
       auth:{ clientId, authority:`https://login.microsoftonline.com/${tenantId}`, redirectUri:location.href.split('?')[0].split('#')[0] },
