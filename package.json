@@ -1,0 +1,32 @@
+{
+  "name": "eletra-shipping-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "COMEX dashboards built with React, TypeScript and Vite",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "check": "npm run test && npm run build",
+    "audit:production": "npm audit --omit=dev",
+    "preview": "vite preview",
+    "preview:cloudflare": "npx wrangler pages dev dist"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0",
+    "vitest": "^5.0.1"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}
